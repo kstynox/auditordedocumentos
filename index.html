@@ -1,0 +1,4815 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>SENA 360 – Detector de Duplicados y Similitud (100% Front‑End)</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+/* SENA 360 – Estilo base (inspirado en los proyectos compartidos) */
+:root{
+  --verde-sena:#39A900;
+  --verde-oscuro:#2E7D00;
+  --texto:#111827;
+  --texto2:#4B5563;
+  --borde:#E5E7EB;
+  --fondo:#F3F4F6;
+  --blanco:#FFFFFF;
+
+  --ok:#065F46;
+  --warn:#B45309;
+  --err:#B91C1C;
+
+  --radius:16px;
+  --shadow:0 6px 18px rgba(0,0,0,.06);
+  --shadow2:0 15px 30px rgba(15,23,42,.12);
+}
+
+*{ box-sizing:border-box; }
+html, body{ height:100%; }
+body{
+  margin:0;
+  font-family:Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background:var(--fondo);
+  color:var(--texto);
+}
+
+header{
+  background:#fff;
+  padding:12px 20px 6px;
+  border-bottom:6px solid #0f9b1a;
+  box-shadow:0 1px 6px rgba(0,0,0,.06);
+}
+.header-content{
+  max-width:1200px;
+  margin:0 auto;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:16px;
+}
+.header-left{ display:flex; align-items:center; gap:12px; min-width: 340px; }
+.header-left img{ height:52px; width:auto; }
+.header-left-text{ font-size:16px; font-weight:700; color:#0b3918; line-height:1.1; }
+.header-center{ font-size:18px; font-weight:700; color:#0d7c1d; text-align:center; }
+.header-right{ font-size:14px; color:var(--texto2); text-align:right; white-space:nowrap; }
+
+.wrap{
+  max-width:1250px;
+  margin:18px auto 48px auto;
+  padding:0 14px;
+}
+
+.card{
+  background:var(--blanco);
+  border:1px solid var(--borde);
+  border-radius:var(--radius);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+.card-header{
+  padding:16px 18px;
+  border-bottom:1px solid var(--borde);
+  display:flex;
+  align-items:flex-start;
+  justify-content:flex-start;
+  gap:16px;
+}
+.card-header h2{ margin:0; font-size:18px; font-weight:900; }
+.card-header .sub{ margin-top:6px; color:var(--texto2); font-size:13px; line-height:1.35; max-width: 920px; }
+.card-body{ padding:16px 18px 18px; }
+
+.pill{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 10px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:900;
+  border:1px solid var(--borde);
+  background:#fff;
+  color:#111827;
+  height:fit-content;
+  white-space:nowrap;
+}
+.pill.ok{ border-color:#A7F3D0; background:#ECFDF5; color:var(--ok); }
+.pill.warn{ border-color:#FDE68A; background:#FFFBEB; color:var(--warn); }
+.pill.err{ border-color:#FCA5A5; background:#FEF2F2; color:var(--err); }
+
+.controls-grid{
+  display:grid;
+  grid-template-columns: 1.1fr .9fr;
+  gap:14px;
+}
+@media (max-width: 980px){
+  .controls-grid{ grid-template-columns:1fr; }
+  .header-content{ flex-direction:column; align-items:flex-start; }
+  .header-center{ text-align:left; }
+}
+
+.panel{
+  border:1px solid var(--borde);
+  border-radius:14px;
+  background:#fff;
+  padding:14px;
+  box-shadow:0 10px 22px rgba(15,23,42,.04);
+}
+.panel-title{
+  font-size:12px;
+  letter-spacing:.18em;
+  text-transform:uppercase;
+  font-weight:950;
+  color:#0b3918;
+  margin:0 0 10px 0;
+}
+
+.drop-zone{
+  border:2px dashed rgba(15,23,42,.25);
+  border-radius:20px;
+  padding:18px;
+  background:#fff;
+  position:relative;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:14px;
+  outline: none;
+}
+.drop-zone:focus{ box-shadow:0 0 0 4px rgba(57,169,0,.18); border-color: rgba(57,169,0,.85); }
+.drop-zone.is-active{
+  border-color:rgba(57,169,0,.9);
+  box-shadow:0 0 0 4px rgba(57,169,0,.20);
+  background:rgba(57,169,0,.05);
+}
+.drop-content{ display:flex; flex-direction:column; gap:4px; }
+.dz-title{ font-weight:900; font-size:14px; }
+.dz-sub{ color:var(--texto2); font-size:12.5px; }
+.dz-hint{ color:var(--texto2); font-size:11.5px; line-height:1.35; max-width: 520px; }
+
+.btnrow{ display:flex; gap:10px; flex-wrap:wrap; margin-top:12px; }
+
+.btn{
+  border:none;
+  border-radius:12px;
+  padding:10px 14px;
+  font-weight:900;
+  cursor:pointer;
+  font-size:13px;
+  background:var(--verde-sena);
+  color:#fff;
+  transition: transform .05s ease, background .12s ease, box-shadow .12s ease;
+  box-shadow:0 10px 18px rgba(46,125,0,.16);
+}
+.btn:hover{ background:var(--verde-oscuro); }
+.btn:active{ transform: translateY(1px); }
+.btn.primary{ background:var(--verde-sena); }
+.btn.secondary{ background:#0d7c1d; }
+.btn.ghost{
+  background:#fff;
+  color:#0f3924;
+  border:1px solid var(--borde);
+  box-shadow:0 8px 16px rgba(15,23,42,.06);
+}
+.btn.ghost:hover{ background:#F9FAFB; }
+.btn[disabled]{ opacity:.55; cursor:not-allowed; box-shadow:none; }
+
+.dz-btn{ flex:0 0 auto; }
+.divider{ height:1px; background:var(--borde); margin:16px 0; }
+
+.field{ margin-top:10px; }
+label{
+  display:block;
+  font-size:12px;
+  font-weight:950;
+  color:#0b3918;
+  margin-bottom:6px;
+  letter-spacing:.02em;
+}
+label .value{ color:#0f172a; font-weight:950; }
+input[type="range"]{ width:100%; }
+.chk{ display:flex; align-items:center; gap:10px; user-select:none; font-size:13px; font-weight:850; color:#111827; margin:0; }
+.chk input{ width:16px; height:16px; accent-color: var(--verde-sena); }
+
+.muted{ color:var(--texto2); }
+.tiny{ font-size:12px; }
+code{ background:#F1F5F9; padding:2px 6px; border-radius:8px; border:1px solid rgba(148,163,184,.35); }
+
+.hint-box{
+  margin-top:12px;
+  border:1px dashed rgba(15,23,42,.22);
+  background:#F9FAFB;
+  border-radius:14px;
+  padding:10px 12px;
+  font-size:12px;
+  color:var(--texto2);
+  line-height:1.35;
+}
+
+.progress-wrap{
+  margin-top:12px;
+  border:1px solid rgba(15,23,42,.08);
+  background:linear-gradient(135deg,#f8fafc,#e2e8f0);
+  border-radius:14px;
+  padding:10px 12px;
+}
+.progress-row{ display:flex; justify-content:flex-start; gap:12px; align-items:center; }
+.progress-title{ font-weight:950; font-size:12px; color:#0b3918; letter-spacing:.04em; }
+.progress-text{ font-size:12px; color:var(--texto2); font-weight:850; text-align:right; }
+.progress-track{ width:100%; height:10px; background:rgba(148,163,184,.28); border-radius:999px; overflow:hidden; margin-top:8px; }
+.progress-bar{ height:100%; width:0%; background:var(--verde-sena); transition: width 120ms linear; }
+.progress-mini{ margin-top:8px; font-size:12px; color:var(--texto2); font-weight:800; }
+
+.section-head{ display:flex; justify-content:flex-start; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+.section-head h3{ margin:0; font-size:15px; font-weight:950; }
+
+.table-wrap{
+  overflow:auto;
+  border:1px solid var(--borde);
+  border-radius:12px;
+  background:#fff;
+}
+table{
+  width:100%;
+  border-collapse:collapse;
+  min-width: 980px;
+}
+thead th{
+  position:sticky;
+  top:0;
+  background:#39a900;
+  color:#fff;
+  font-size:12px;
+  padding:10px 10px;
+  text-align:left;
+  white-space:nowrap;
+}
+tbody td{
+  border-top:1px solid var(--borde);
+  padding:10px 10px;
+  font-size:12.5px;
+  vertical-align:top;
+  background:#fff;
+}
+tbody tr:hover td{ background:#F9FAFB; }
+td.actions{ white-space:nowrap; }
+.mono{ font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace; }
+
+.badge{
+  display:inline-flex;
+  align-items:center;
+  padding:6px 14px;
+  border-radius:999px;
+  font-size:13px;
+  font-weight:900;
+  border:1px solid rgba(0,0,0,.10);
+  white-space:nowrap;
+}
+.badge.ok{ background:rgba(57,169,0,.10); color:#14532D; border-color:rgba(20,83,45,.18); }
+.badge.warn{ background:rgba(245,158,11,.12); color:#7C2D12; border-color:rgba(124,45,18,.18); }
+.badge.err{ background:rgba(220,38,38,.08); color:#7F1D1D; border-color:rgba(220,38,38,.18); }
+.badge.info{ background:rgba(37,99,235,.08); color:#1E3A8A; border-color:rgba(30,58,138,.18); }
+
+.result-list{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+.result-card{
+  border:1px solid var(--borde);
+  border-radius:14px;
+  background:#fff;
+  overflow:hidden;
+  box-shadow:0 10px 22px rgba(15,23,42,.04);
+}
+.result-card-head{
+  padding:10px 12px;
+  display:flex;
+  justify-content:flex-start;
+  align-items:flex-start;
+  gap:12px;
+  border-bottom:1px solid var(--borde);
+}
+.result-card-title{
+  font-weight:950;
+  font-size:13px;
+  margin:0;
+}
+.result-card-body{ padding:10px 12px; }
+.result-files{
+  display:flex;
+  flex-direction:column;
+  gap:6px;
+  margin-top:8px;
+}
+.result-file{
+  display:flex;
+  justify-content:flex-start;
+  gap:10px;
+  padding:8px 10px;
+  border-radius:12px;
+  background:#F9FAFB;
+  border:1px solid rgba(148,163,184,.28);
+}
+.result-file .name{ font-weight:900; }
+.result-file .meta{ color:var(--texto2); font-size:12px; }
+
+.overlay{
+  position:fixed;
+  inset:0;
+  background:rgba(15,23,42,.65);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:2000;
+  padding:18px;
+}
+.overlay.show{ display:flex; }
+.modal{
+  width:min(980px, 96vw);
+  max-height: 92vh;
+  overflow:auto;
+  background:#fff;
+  border:1px solid rgba(148,163,184,.45);
+  border-radius:18px;
+  box-shadow:0 20px 60px rgba(15,23,42,.35);
+}
+.modal-header{
+  padding:14px 16px;
+  border-bottom:1px solid var(--borde);
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:12px;
+  background:linear-gradient(180deg, rgba(57,169,0,.12), rgba(255,255,255,1));
+}
+.modal-title{ font-weight:950; font-size:14px; }
+.modal-sub{ font-size:12px; color:var(--texto2); font-weight:850; margin-top:2px; }
+.modal-body{ padding:14px 16px; }
+.modal-body pre{
+  white-space:pre-wrap;
+  word-break:break-word;
+  background:#F9FAFB;
+  border:1px solid rgba(148,163,184,.28);
+  border-radius:14px;
+  padding:12px;
+  margin:0;
+  font-size:12.5px;
+  line-height:1.35;
+}
+
+.app-footer{
+  margin:32px auto 0;
+  max-width:560px;
+  padding:0 14px 40px;
+  text-align:center;
+}
+.app-footer-card{
+  background:#fff;
+  border-radius:28px;
+  box-shadow:var(--shadow2);
+  padding:22px 26px;
+  display:flex;
+  flex-direction:column;
+  gap:12px;
+  border:1px solid rgba(15,23,42,.05);
+}
+.footer-label{
+  font-size:10px;
+  letter-spacing:0.2em;
+  text-transform:uppercase;
+  color:#9ca3af;
+}
+.footer-body{
+  background:linear-gradient(135deg,#f8fafc,#e2e8f0);
+  border-radius:22px;
+  padding:14px 18px;
+  display:flex;
+  align-items:center;
+  gap:14px;
+  justify-content:flex-start;
+  border:1px solid rgba(15,23,42,.08);
+}
+.footer-icon{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  background:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 4px 10px rgba(0,0,0,.08);
+  font-weight:700;
+  color:#0f5f1d;
+}
+.footer-main{ text-align:left; flex:1; }
+.footer-main .title{ font-weight:950; font-size:14px; color:#0f4b2c; margin-bottom:2px; }
+.footer-main .name{ font-size:13px; font-weight:600; color:#0f172a; }
+.footer-badge{
+  width:28px;
+  height:28px;
+  border-radius:50%;
+  background:#fff;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(15,23,42,.08);
+  box-shadow:0 3px 8px rgba(15,23,42,.12);
+}
+.footer-note{ margin-top:4px; }
+
+a.linklike{ color:#0ea5e9; font-weight:950; text-decoration:none; }
+a.linklike:hover{ text-decoration:underline; }
+
+
+/* Small button variant */
+.btn.btn-sm{
+  padding:7px 10px;
+  font-size:12px;
+  border-radius:10px;
+  box-shadow:0 6px 12px rgba(15,23,42,.06);
+}
+.namecell{ max-width: 420px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.drop-zone.disabled{ opacity:.85; }
+
+.file-input-hidden{ position:absolute; width:1px; height:1px; opacity:0; pointer-events:none; }
+
+
+/* Ajustes: tablas con búsqueda/ordenamiento */
+.table-controls{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  justify-content:flex-start;
+  flex-wrap:wrap;
+  margin:10px 0 8px;
+}
+.searchbox{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border:1px solid var(--borde);
+  border-radius:12px;
+  background:#fff;
+  box-shadow:0 8px 14px rgba(15,23,42,.04);
+}
+.searchbox input{
+  border:none;
+  outline:none;
+  font-size:12.5px;
+  width:min(360px, 70vw);
+}
+.sortbox{
+  display:flex;
+  gap:8px;
+  align-items:center;
+}
+.select{
+  border:1px solid var(--borde);
+  border-radius:12px;
+  padding:8px 10px;
+  font-size:12.5px;
+  background:#fff;
+}
+
+/* No ampliar columnas por nombres: layout fijo + wrap dentro de la celda */
+table{ table-layout: fixed; }
+td.wrapcell{
+  white-space:normal;
+  word-break:break-word;
+  overflow:hidden;
+}
+td.wrapcell .full{
+  display:block;
+  max-width: 100%;
+}
+td.wrapcell .full[title]{
+  cursor:help;
+}
+
+/* Comparador lado a lado */
+.compare-grid{
+  display:grid;
+  grid-template-columns: 1fr 1fr;
+  gap:12px;
+}
+@media (max-width: 980px){
+  .compare-grid{ grid-template-columns:1fr; }
+}
+.compare-pane{
+  border:1px solid rgba(148,163,184,.28);
+  border-radius:14px;
+  background:#F9FAFB;
+  overflow:hidden;
+}
+.compare-pane-head{
+  padding:10px 12px;
+  background:#fff;
+  border-bottom:1px solid rgba(148,163,184,.28);
+  display:flex;
+  justify-content:flex-start;
+  gap:10px;
+  align-items:flex-start;
+}
+.compare-pane-title{
+  font-weight:950;
+  font-size:12.5px;
+  line-height:1.2;
+}
+.compare-pane-sub{ font-size:11.5px; color:var(--texto2); font-weight:850; margin-top:2px; }
+.compare-scroll{
+  max-height: 56vh;
+  overflow:auto;
+  padding:12px;
+}
+.compare-scroll pre{
+  margin:0;
+  white-space:pre-wrap;
+  word-break:break-word;
+  font-size:12.5px;
+  line-height:1.35;
+}
+
+mark{
+  background:rgba(57,169,0,.25);
+  padding:0 2px;
+  border-radius:4px;
+}
+
+/* Diff tipo "Word" (palabras) */
+.diff-toolbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  align-items:center;
+  margin: 0 0 10px 0;
+}
+.diff-toolbar .btn{ padding:8px 10px; font-size:12px; }
+.diff-legend{ font-size:12px; color:var(--texto2); font-weight:850; display:flex; gap:10px; align-items:center; }
+.diff-chip{ display:inline-flex; gap:6px; align-items:center; padding:4px 8px; border-radius:999px; border:1px solid rgba(148,163,184,.28); background:#fff; }
+.diff-swatch{ width:12px; height:12px; border-radius:3px; display:inline-block; }
+.diff-add{ background:rgba(16,185,129,.22); border-radius:4px; padding:0 2px; }
+.diff-del{ background:rgba(239,68,68,.20); border-radius:4px; padding:0 2px; text-decoration: line-through; }
+.diff-sim{ background:rgba(234,179,8,.22); border-radius:4px; padding:0 2px; }
+.diff-muted{ color:var(--texto2); }
+
+
+/* Ordenamiento por clic en encabezados */
+th.sortable{
+  cursor:pointer;
+  user-select:none;
+}
+th.sortable .sort-ind{
+  font-size:11px;
+  margin-left:6px;
+  opacity:.9;
+}
+td.center{ text-align:center; }
+td.right{ text-align:right; font-variant-numeric: tabular-nums; }
+td.sha{ word-break:break-all; }
+td.mono.small{ font-size:11.2px; }
+tbody tr td{ vertical-align:top; }
+
+
+/* Ajustes adicionales: tablas */
+td.typecell{
+  white-space:normal;
+  word-break:break-word;
+}
+
+
+/* Botón icono (X roja) */
+.icon-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  width:34px;
+  height:30px;
+  border-radius:10px;
+  border:1px solid rgba(220,38,38,.25);
+  background:#fff;
+  cursor:pointer;
+  box-shadow:0 8px 14px rgba(15,23,42,.04);
+}
+.icon-btn:hover{ background:rgba(220,38,38,.06); }
+.icon-btn:active{ transform: translateY(1px); }
+.icon-btn svg{ width:16px; height:16px; }
+.icon-btn.danger{ color:#DC2626; }
+
+
+/* Acordeón (Archivos cargados) */
+details.accordion{
+  border:1px solid rgba(148,163,184,.28);
+  border-radius:16px;
+  background:#fff;
+  box-shadow:0 12px 22px rgba(15,23,42,.05);
+}
+details.accordion > summary{
+  list-style:none;
+  cursor:pointer;
+  padding:12px 14px;
+  display:flex;
+  align-items:center;
+  justify-content:flex-start;
+  gap:10px;
+}
+details.accordion > summary::-webkit-details-marker{ display:none; }
+details.accordion > summary .left{
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+details.accordion > summary .title{
+  font-size:15px;
+  font-weight:950;
+  color:var(--texto);
+}
+details.accordion > summary .sub{
+  font-size:12px;
+  color:var(--texto2);
+  font-weight:800;
+}
+details.accordion > summary .chev{
+  width:26px;
+  height:26px;
+  border-radius:10px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  border:1px solid rgba(148,163,184,.30);
+  background:#fff;
+}
+details.accordion[open] > summary .chev{ transform: rotate(180deg); }
+details.accordion .accordion-body{
+  padding:0 14px 14px;
+}
+
+
+/* Filter bars (por extensión) */
+.filterbar{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin:10px 0 8px;
+}
+.filterchip.btn{
+  padding:6px 10px;
+  border-radius:999px;
+}
+.filterchip.btn.active{
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+/* Colores por tipo (filtros por extensión) */
+.filterchip.ext-pdf{ border:1px solid #d32f2f; color:#d32f2f; }
+.filterchip.ext-pdf.active{ background:#d32f2f; border-color:#d32f2f; color:#fff; }
+
+.filterchip.ext-doc{ border:1px solid #1976d2; color:#1976d2; }
+.filterchip.ext-doc.active{ background:#1976d2; border-color:#1976d2; color:#fff; }
+
+.filterchip.ext-xls{ border:1px solid #2e7d32; color:#2e7d32; }
+.filterchip.ext-xls.active{ background:#2e7d32; border-color:#2e7d32; color:#fff; }
+
+.filterchip.ext-ppt{ border:1px solid #ef6c00; color:#ef6c00; }
+.filterchip.ext-ppt.active{ background:#ef6c00; border-color:#ef6c00; color:#fff; }
+
+.filterchip.ext-img{ border:1px solid #6a1b9a; color:#6a1b9a; }
+.filterchip.ext-img.active{ background:#6a1b9a; border-color:#6a1b9a; color:#fff; }
+
+.filterchip.ext-zip{ border:1px solid #455a64; color:#455a64; }
+.filterchip.ext-zip.active{ background:#455a64; border-color:#455a64; color:#fff; }
+
+.filterchip.ext-aud{ border:1px solid #00897b; color:#00897b; }
+.filterchip.ext-aud.active{ background:#00897b; border-color:#00897b; color:#fff; }
+
+.filterchip.ext-vid{ border:1px solid #3949ab; color:#3949ab; }
+.filterchip.ext-vid.active{ background:#3949ab; border-color:#3949ab; color:#fff; }
+
+.filterchip.ext-code{ border:1px solid #6d4c41; color:#6d4c41; }
+.filterchip.ext-code.active{ background:#6d4c41; border-color:#6d4c41; color:#fff; }
+
+.filterchip.ext-other{ border:1px solid #546e7a; color:#546e7a; }
+.filterchip.ext-other.active{ background:#546e7a; border-color:#546e7a; color:#fff; }
+
+.filterchip.ext-all{ border:1px solid var(--border); color: var(--text); }
+.filterchip.ext-all.active{ background: var(--accent); border-color: var(--accent); color:#fff; }
+
+.filterchip.btn:not(.active){ background: transparent; opacity: .92; }
+.filterchip.btn:not(.active):hover{ opacity: 1; }
+}
+
+/* Comparador - etiquetas */
+.legend{
+  display:flex;
+  gap:10px;
+  align-items:center;
+  flex-wrap:wrap;
+}
+.legend .pill{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+  padding:4px 10px;
+  border-radius:999px;
+  border:1px solid var(--border);
+  background: var(--card);
+  font-size:12px;
+}
+.legend .swatch{
+  width:12px;
+  height:12px;
+  border-radius:4px;
+  border:1px solid rgba(0,0,0,.15);
+}
+.sw-del{ background:#ffb3b3; }
+.sw-add{ background:#b8f5c6; }
+.sw-sim{ background:#ffe69a; }
+
+.diff-del{ background:#ffb3b3; text-decoration: line-through; }
+.diff-add{ background:#b8f5c6; }
+.diff-sim{ background:#ffe69a; }
+
+</style>
+<!-- pdf.js (solo para extracción de texto) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <!-- mammoth.js (solo para extracción de texto DOCX) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/mammoth@1.6.0/mammoth.browser.min.js"></script>
+
+  <!-- jsPDF + autoTable (exportar reporte a PDF) -->
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+</head>
+
+<body>
+  <header>
+    <div class="header-content">
+      <div class="header-left">
+        <img src="https://www.sena.edu.co/Style%20Library/alayout/images/logoSena.png" alt="Logo SENA" decoding="async">
+        <div class="header-left-text">Servicio Nacional de Aprendizaje - SENA Regional Tolima</div>
+      </div>
+      <div class="header-center">Detector de Duplicados y Similitud</div>
+      <div class="header-right">Centro de Comercio y Servicios</div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <h2>Analizador local (sin servidor)</h2>
+          <div class="sub">
+            Carga archivos por <b>arrastrar y soltar</b> o con el botón. Se detectan <b>copias exactas</b> (SHA‑256) y se estima <b>similitud</b>
+            para <b>texto/PDF/DOCX/XLSX/PPTX/imágenes</b>. No se sube nada a internet.
+          </div>
+        </div>
+        <div class="pill ok" id="pillCounts">0 archivos</div>
+      </div>
+
+      <div class="card-body">
+        <div class="controls-grid">
+          <section class="panel">
+            <div class="panel-title">A. Ingesta</div>
+
+            <div class="drop-zone" id="dropZone" tabindex="0" role="button" aria-label="Zona para soltar archivos">
+              <input type="file" id="fileInput" multiple class="file-input-hidden" aria-hidden="true" tabindex="-1" accept=".pdf,.txt,.md,.csv,.tsv,.json,.xml,.html,.htm,.log,.rtf,.tex,.yaml,.yml,.ini,.cfg,.conf,.toml,.js,.mjs,.cjs,.ts,.jsx,.tsx,.py,.java,.c,.cpp,.h,.hpp,.go,.rs,.php,.rb,.sql,.bas,.gs,.css,.scss,.less,.bat,.cmd,.ps1,.sh,.docx,.doc,.pptx,.ppt,.xlsx,.xls,.png,.jpg,.jpeg,.jpe,.gif,.bmp,.tif,.tiff,.webp,.mp3,.m4a,.opus,.wav,.flac,.aac,.mp4,.m4v,.mov,.webm,.avi,.mkv,.zip,.rar,.7z,.tar,.gz" />
+              <div class="drop-content">
+                <div class="dz-title">Arrastra y suelta aquí </div>
+                <div class="dz-sub">O presiona <b>Seleccionar archivos</b>.</div>
+                <div class="dz-hint">Se aceptan todos los tipos para duplicados exactos. Similitud depende del tipo.</div>
+              </div>
+              <button class="btn primary dz-btn" id="btnPick" type="button">Seleccionar archivos</button>
+            </div>
+
+            <div class="btnrow">
+              <button class="btn primary" id="btnAnalyze" type="button" disabled>Analizar</button>
+              <button class="btn ghost" id="btnClear" type="button" disabled>Limpiar lista</button>
+              <button class="btn ghost" id="btnStop" type="button" disabled>Detener</button>
+            </div>
+
+            <div class="progress-wrap" aria-live="polite">
+              <div class="progress-row">
+                <div class="progress-title">Progreso</div>
+                <div class="progress-text" id="progressText">—</div>
+              </div>
+              <div class="progress-track" role="progressbar" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar" id="progressBar" style="width:0%"></div>
+              </div>
+              <div class="progress-mini" id="progressMini">Sin tareas.</div>
+            </div>
+
+            <div class="hint-box" id="compatHint">
+              <b>Nota de compatibilidad:</b> si abres este archivo con doble clic (<code>file://</code>), algunos navegadores limitan Web Workers.
+              La app incluye un modo de respaldo (sin worker). PDF.js se ejecuta sin worker para evitar bloqueos en <code>file://</code>.
+            </div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-title">B. Controles</div>
+
+            <div class="field">
+              <label for="threshold">Umbral de similitud: <span class="value" id="thresholdVal">80%</span></label>
+              <input type="range" id="threshold" min="0" max="100" value="80" />
+              <div class="muted tiny">Filtra la lista de pares similares mostrados (no recalcula).</div>
+            </div>
+
+            <div class="field">
+              <label class="chk">
+                <input type="checkbox" id="toggleIgnoreCover" checked />
+                Ignorar portada (activar)
+              </label>
+              <div class="muted tiny">Control fino por tipo. Se calcula “sin portada” en extracción y se usa para la clasificación final según esta configuración.</div>
+
+              <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px;">
+                <div class="card" style="padding:10px 12px;">
+                  <div class="muted tiny" style="font-weight:900; margin-bottom:6px;">PDF</div>
+                  <label class="chk" style="margin-bottom:6px;">
+                    <input type="checkbox" id="toggleIgnorePdfCover" checked />
+                    Aplicar “sin portada” en PDF
+                  </label>
+                  <label class="muted tiny" for="pdfSkipPages">Páginas a omitir (1, 2, N)</label>
+                  <input class="input" id="pdfSkipPages" type="number" min="0" max="50" step="1" value="1" />
+                  <div class="muted tiny">Si se deja en 1, se aplica una heurística opcional para omitir 2 cuando la primera página tiene muy poco texto.</div>
+                </div>
+
+                <div class="card" style="padding:10px 12px;">
+                  <div class="muted tiny" style="font-weight:900; margin-bottom:6px;">DOCX</div>
+                  <label class="chk" style="margin-bottom:6px;">
+                    <input type="checkbox" id="toggleIgnoreDocxCover" checked />
+                    Aplicar “sin portada” en DOCX
+                  </label>
+                  <label class="muted tiny" for="docxSkipRatio">Umbral (fallback): omitir % inicial si no se detecta “Introducción/Capítulo”</label>
+                  <input class="input" id="docxSkipRatio" type="number" min="0" max="50" step="1" value="8" />
+                  <div class="muted tiny">Ej.: 8 = omite ~8% inicial (mín. 800 y máx. 4000 caracteres).</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="field">
+              <label class="chk">
+                <input type="checkbox" id="toggleAggressive" />
+                Normalización agresiva (quitar puntuación)
+              </label>
+              <div class="muted tiny">Mejora coincidencia cuando cambian comas/puntos, pero puede sobre‑unificar.</div>
+            </div>
+
+            <div class="field">
+              <div class="muted tiny" style="font-weight:900; margin-bottom:8px;">Parámetros de similitud (calibración)</div>
+              <div style="display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:10px;">
+                <div>
+                  <label class="muted tiny" for="shingleK">k‑shingles (k)</label>
+                  <input class="input" id="shingleK" type="number" min="3" max="12" step="1" value="5" />
+                </div>
+                <div>
+                  <label class="muted tiny" for="minhashSize">Firmas MinHash (#)</label>
+                  <input class="input" id="minhashSize" type="number" min="16" max="256" step="16" value="64" />
+                </div>
+                <div>
+                  <label class="muted tiny" for="maxShingles">Límite muestreo (shingles máx.)</label>
+                  <input class="input" id="maxShingles" type="number" min="5000" max="500000" step="1000" value="120000" />
+                </div>
+                <div>
+                  <label class="muted tiny" for="maxCompareShingles">Límite comparador (shingles máx.)</label>
+                  <input class="input" id="maxCompareShingles" type="number" min="1000" max="200000" step="1000" value="50000" />
+                </div>
+              </div>
+              <div class="muted tiny" style="margin-top:6px;">A mayor k y más firmas, más precisión pero más costo. Ajusta muestreo para controlar rendimiento en lotes grandes.</div>
+            </div>
+
+            <div class="btnrow">
+              <button class="btn secondary" id="btnExportJSON" type="button" disabled>Exportar JSON</button>
+              <button class="btn secondary" id="btnExportCSV" type="button" disabled>Exportar CSV</button>
+              <button class="btn secondary" id="btnExportPDF" type="button" disabled>Exportar PDF (SENA)</button>
+            </div>
+
+            <div class="muted tiny">
+              Para audio/video y binarios, la similitud avanzada no se calcula (solo exactos por hash). Requeriría fingerprinting especializado.
+            </div>
+          </section>
+        </div>
+
+        <div class="divider"></div>
+
+        <section>
+  <details class="accordion" id="filesAccordion" open>
+    <summary>
+      <div class="left">
+        <div class="title">Archivos cargados</div>
+        <div class="sub" id="fileStats">—</div>
+      </div>
+      <div class="chev" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <path d="M6 10l6 6 6-6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+    </summary>
+
+    <div class="accordion-body">
+      <div class="table-controls">
+<span class="badge" id="filesCountBadge" title="Total de registros mostrados">0</span>
+<div class="searchbox" title="Buscar en archivos cargados">
+          <span class="muted tiny">Buscar:</span>
+          <input id="filesSearch" type="search" placeholder="Nombre, tipo, clasificación, estado…" />
+        </div>
+</div>
+
+      <div class="table-wrap" role="region" aria-label="Tabla de archivos">
+                        <div class="filterbar" id="filesFilters"></div>
+<table>
+<colgroup>
+  <col style="width:48px">
+  <col style="width:280px">
+  <col style="width:150px">
+  <col style="width:110px">
+  <col style="width:170px">
+  <col style="width:140px">
+  <col style="width:140px">
+  <col style="width:110px">
+</colgroup>
+<thead>
+  <tr>
+    <th class="sortable" data-sort="idx">#<span class="sort-ind" aria-hidden="true"></span></th>
+    <th class="sortable" data-sort="name">Nombre<span class="sort-ind" aria-hidden="true"></span></th>
+    <th class="sortable" data-sort="type">Tipo<span class="sort-ind" aria-hidden="true"></span></th>
+    <th class="sortable" data-sort="size">Tamaño<span class="sort-ind" aria-hidden="true"></span></th>
+    <th class="sortable" data-sort="lastModified">Últ. modificación<span class="sort-ind" aria-hidden="true"></span></th>
+    <th class="sortable" data-sort="kind">Clasificación<span class="sort-ind" aria-hidden="true"></span></th>
+    <th class="sortable" data-sort="status">Estado<span class="sort-ind" aria-hidden="true"></span></th>
+    <th class="sortable" data-sort="actions">Acciones<span class="sort-ind" aria-hidden="true"></span></th>
+  </tr>
+</thead>
+              <tbody id="filesTbody"></tbody>
+            </table>
+          </div>
+    </div>
+  </details>
+</section>
+
+        <div class="divider"></div>
+
+        <section>
+          <div class="section-head">
+            <h3>Resultados: Copias exactas (SHA‑256)</h3>
+            <span class="badge" id="exactCountBadge" title="Total de registros mostrados">0</span>
+            <div class="muted tiny" id="exactStats">—</div>
+          
+<div class="table-controls">
+<div class="searchbox" title="Buscar en la tabla de duplicados exactos">
+    <span class="muted tiny">Buscar:</span>
+    <input id="exactSearch" type="search" placeholder="Nombre, tipo, hash, tamaño…" />
+  </div>
+</div>
+
+<div class="table-wrap" role="region" aria-label="Tabla de copias exactas">
+              <div class="filterbar" id="exactFilters"></div>
+<table>
+    <colgroup>
+      <col style="width:70px">
+      <col style="width:260px">
+      <col style="width:120px">
+      <col style="width:110px">
+      <col style="width:150px">
+      <col style="width:190px">
+      <col style="width:110px">
+    </colgroup>
+    <thead>
+  <tr>
+    <th class="sortable" data-sort="group">Grupo<span class="sort-ind" aria-hidden="true"></span></th>
+    <th class="sortable" data-sort="name">Archivo<span class="sort-ind" aria-hidden="true"></span></th>
+    <th class="sortable" data-sort="type">Tipo<span class="sort-ind" aria-hidden="true"></span></th>
+    <th class="sortable" data-sort="size">Tamaño<span class="sort-ind" aria-hidden="true"></span></th>
+    <th class="sortable" data-sort="lastModified">Últ. modificación<span class="sort-ind" aria-hidden="true"></span></th>
+    <th class="sortable" data-sort="sha">SHA‑256<span class="sort-ind" aria-hidden="true"></span></th>
+    <th class="sortable" data-sort="pct">% copia exacta<span class="sort-ind" aria-hidden="true"></span></th>
+  </tr>
+</thead>
+    <tbody id="exactTbody"></tbody>
+  </table>
+</div>
+</section>
+
+
+        <div class="divider"></div>
+
+        <section>
+          <div class="section-head">
+            <h3>Resultados: Similitud (pares)</h3>
+            <span class="badge" id="simCountBadge" title="Total de registros mostrados">0</span>
+            <div class="muted tiny" id="simStats">—</div>
+            <div class="muted tiny" id="simExplain"></div>
+          </div>
+
+          
+<div class="table-controls">
+<div class="searchbox" title="Buscar en la tabla de similitud">
+    <span class="muted tiny">Buscar:</span>
+    <input id="simSearch" type="search" placeholder="Archivo, método, etiqueta…" />
+  </div>
+</div>
+<div class="table-wrap" role="region" aria-label="Tabla de similitud">
+                        <div class="filterbar" id="simFilters"></div>
+<table>
+
+<colgroup>
+  <col style="width:40px">
+  <col style="width:210px">
+  <col style="width:210px">
+  <col style="width:90px">
+  <col style="width:70px">
+  <col style="width:95px">
+  <col style="width:110px">
+  <col style="width:70px">
+  <col style="width:90px">
+</colgroup>
+
+              <thead>
+                <tr>
+                  <th class="sortable" data-sort="rank">#<span class="sort-ind" aria-hidden="true"></span></th>
+                  <th class="sortable" data-sort="a">Archivo A<span class="sort-ind" aria-hidden="true"></span></th>
+                  <th class="sortable" data-sort="b">Archivo B<span class="sort-ind" aria-hidden="true"></span></th>
+                  <th class="sortable" data-sort="method">Método<span class="sort-ind" aria-hidden="true"></span></th>
+                  <th class="sortable" data-sort="total">% total<span class="sort-ind" aria-hidden="true"></span></th>
+                  <th class="sortable" data-sort="nocover">% sin portada<span class="sort-ind" aria-hidden="true"></span></th>
+                  <th class="sortable" data-sort="label">Etiqueta<span class="sort-ind" aria-hidden="true"></span></th>
+                  <th class="sortable" data-sort="exact">Exacto<span class="sort-ind" aria-hidden="true"></span></th>
+                  <th class="sortable" data-sort="actions">Acciones<span class="sort-ind" aria-hidden="true"></span></th>
+                </tr>
+              </thead>
+              <tbody id="simTbody"></tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: coincidencias -->
+  <div class="overlay" id="modalOverlay" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <div>
+          <div class="modal-title" id="modalTitle">Coincidencias</div>
+          <div class="modal-sub" id="modalSub">—</div>
+        </div>
+        <button class="btn ghost" id="btnModalClose" type="button">Cerrar</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+    </div>
+  </div>
+
+  <footer class="app-footer">
+    <div class="app-footer-card">
+      <div class="footer-label">Diseño y desarrollo</div>
+      <div class="footer-body">
+        <span class="footer-icon">✕</span>
+        <div class="footer-main">
+          <div class="title">Instructor diseñador</div>
+          <div class="name">Yeison Castellanos Gordillo</div>
+        </div>
+        <div class="footer-badge" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0f5f1d" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="6"></circle>
+            <path d="M16 16l5 5"></path>
+          </svg>
+        </div>
+      </div>
+      <div class="footer-note muted tiny"></div>
+    </div>
+  </footer>
+<script>
+/* app.js – SENA 360: Duplicados exactos + Similitud (solo front-end)
+   - Hash exacto: SHA-256 (pipeline eficiente)
+   - Similitud:
+     * Texto: shingling (k=5) + MinHash/LSH (candidatos) + Jaccard exacto cuando es viable
+     * PDF: pdf.js -> texto por página (total y sin portada)
+     * DOCX: mammoth -> texto (total y sin portada)
+     * Imágenes: dHash (64-bit) -> Hamming distance
+*/
+
+(function(){
+  "use strict";
+
+  // -------------------------
+  // DOM helpers
+  // -------------------------
+  const $ = (id) => document.getElementById(id);
+
+  const els = {
+    dropZone: $("dropZone"),
+    fileInput: $("fileInput"),
+    btnPick: $("btnPick"),
+    btnAnalyze: $("btnAnalyze"),
+    btnClear: $("btnClear"),
+    btnStop: $("btnStop"),
+
+    threshold: $("threshold"),
+    thresholdVal: $("thresholdVal"),
+    toggleIgnoreCover: $("toggleIgnoreCover"),
+    toggleIgnorePdfCover: $("toggleIgnorePdfCover"),
+    toggleIgnoreDocxCover: $("toggleIgnoreDocxCover"),
+    pdfSkipPages: $("pdfSkipPages"),
+    docxSkipRatio: $("docxSkipRatio"),
+    toggleAggressive: $("toggleAggressive"),
+    shingleK: $("shingleK"),
+    minhashSize: $("minhashSize"),
+    maxShingles: $("maxShingles"),
+    maxCompareShingles: $("maxCompareShingles"),
+
+    btnExportJSON: $("btnExportJSON"),
+    btnExportCSV: $("btnExportCSV"),
+    btnExportPDF: $("btnExportPDF"),
+
+    pillCounts: $("pillCounts"),
+    filesFilters: $("filesFilters"),
+    filesTbody: $("filesTbody"),
+    filesSearch: $("filesSearch"),
+
+    exactFilters: $("exactFilters"),
+
+    exactTbody: $("exactTbody"),
+    exactSearch: $("exactSearch"),
+    exactSortField: $("exactSortField"),
+    exactSortDir: $("exactSortDir"),
+    simFilters: $("simFilters"),
+
+    simTbody: $("simTbody"),
+    simSearch: $("simSearch"),
+    simSortField: $("simSortField"),
+    simSortDir: $("simSortDir"),
+
+    fileStats: $("fileStats"),
+    exactStats: $("exactStats"),
+    simStats: $("simStats"),
+    simExplain: $("simExplain"),
+
+    progressText: $("progressText"),
+    progressBar: $("progressBar"),
+    progressMini: $("progressMini"),
+
+    modalOverlay: $("modalOverlay"),
+    btnModalClose: $("btnModalClose"),
+    modalTitle: $("modalTitle"),
+    modalSub: $("modalSub"),
+    modalBody: $("modalBody"),
+  };
+
+  // -------------------------
+  // State
+  // -------------------------
+  const STATE = {
+    files: [],           // Array<FileRec>
+    byId: new Map(),     // id -> FileRec
+    analysis: null,      // last report object
+    nextId: 1,
+    isBusy: false,
+    cancelRequested: false,
+    cache: null, // { settingsSig, analyzedIds:Set<number>, pairKeySet:Set<string>, exactGroups:Array, similarPairs:Array }
+    settings: {
+      threshold: 80,
+      ignoreCover: true,
+      ignoreCoverPdf: true,
+      ignoreCoverDocx: true,
+      pdfSkipPages: 1,
+      docxSkipRatio: 8, // porcentaje
+      aggressive: false,
+      shingleK: 5,
+      minhashSize: 64,
+      maxShingles: 120000,
+      maxCompareShingles: 50000,
+    },
+    filters: { files: new Set(), sim: new Set(), exact: new Set() },
+};
+
+  const TABLE = {
+    files: { q: "", sortField: "name", sortDir: "asc" },
+    exact: { q: "", sortField: "name", sortDir: "asc" },
+    sim: { q: "", sortField: "nocover", sortDir: "desc" },
+  };
+
+
+  function shouldUseNoCover(rec){
+    if(!STATE.settings.ignoreCover) return false;
+    if(!rec) return false;
+    if(rec.kind === "pdf") return !!STATE.settings.ignoreCoverPdf;
+    if(rec.kind === "docx") return !!STATE.settings.ignoreCoverDocx;
+    return false;
+  }
+
+  function currentParamsSig(){
+    return JSON.stringify({
+      aggressive: !!STATE.settings.aggressive,
+      shingleK: Number(STATE.settings.shingleK),
+      minhashSize: Number(STATE.settings.minhashSize),
+      maxShingles: Number(STATE.settings.maxShingles),
+      pdfSkipPages: Number(STATE.settings.pdfSkipPages),
+      docxSkipRatio: Number(STATE.settings.docxSkipRatio),
+    });
+  }
+
+  /**
+   * FileRec structure (in-memory)
+   * {
+   *   id, file, name, ext, type, size, lastModified,
+   *   kind: "text"|"pdf"|"docx"|"sheet"|"pptx"|"image"|"audio"|"video"|"doc"|"ppt"|"other",
+   *   status: string,
+   *   sha256?: string,
+   *   fingerprints?: {
+   *      text?: { sig:Array<number>, shingles?: Uint32Array, tokenCount:number, charCount:number }
+   *      textNoCover?: { ... }
+   *      image?: { dhash: bigint, width:number, height:number }
+   *      av?: { duration:number|null }
+   *   },
+   *   extracted?: {
+   *      text?: string,
+   *      textNoCover?: string,
+   *      pdfPages?: number
+   *   },
+   *   errors?: string[]
+   * }
+   */
+
+  // -------------------------
+  // Worker (SHA-256)
+  // -------------------------
+    const WORKER_SOURCE = `
+/* worker.js – tareas pesadas (SHA-256 por streaming) */
+
+class Sha256 {
+  constructor(){
+    this.h = new Uint32Array([
+      0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,
+      0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19
+    ]);
+    this.buf = new Uint8Array(64);
+    this.bufLen = 0;
+    this.bytesHashed = 0;
+    this.finished = false;
+    this.tmp = new Uint32Array(64);
+  }
+  static rotr(x,n){ return (x>>>n) | (x<<(32-n)); }
+  static ch(x,y,z){ return (x & y) ^ (~x & z); }
+  static maj(x,y,z){ return (x & y) ^ (x & z) ^ (y & z); }
+  static s0(x){ return Sha256.rotr(x,7) ^ Sha256.rotr(x,18) ^ (x>>>3); }
+  static s1(x){ return Sha256.rotr(x,17) ^ Sha256.rotr(x,19) ^ (x>>>10); }
+  static S0(x){ return Sha256.rotr(x,2) ^ Sha256.rotr(x,13) ^ Sha256.rotr(x,22); }
+  static S1(x){ return Sha256.rotr(x,6) ^ Sha256.rotr(x,11) ^ Sha256.rotr(x,25); }
+  update(data){
+    if(this.finished) throw new Error("SHA-256: update() luego de digest().");
+    let pos = 0;
+    const len = data.length;
+    this.bytesHashed += len;
+    while(pos < len){
+      const take = Math.min(len - pos, 64 - this.bufLen);
+      this.buf.set(data.subarray(pos, pos + take), this.bufLen);
+      this.bufLen += take;
+      pos += take;
+      if(this.bufLen === 64){
+        this._compress(this.buf);
+        this.bufLen = 0;
+      }
+    }
+  }
+  _compress(chunk){
+    const K = Sha256.K;
+    const w = this.tmp;
+    for(let i=0;i<16;i++){
+      const j = i*4;
+      w[i] = ((chunk[j]<<24) | (chunk[j+1]<<16) | (chunk[j+2]<<8) | (chunk[j+3])) >>> 0;
+    }
+    for(let i=16;i<64;i++){
+      w[i] = (Sha256.s1(w[i-2]) + w[i-7] + Sha256.s0(w[i-15]) + w[i-16]) >>> 0;
+    }
+    let a=this.h[0], b=this.h[1], c=this.h[2], d=this.h[3], e=this.h[4], f=this.h[5], g=this.h[6], h=this.h[7];
+    for(let i=0;i<64;i++){
+      const t1 = (h + Sha256.S1(e) + Sha256.ch(e,f,g) + K[i] + w[i]) >>> 0;
+      const t2 = (Sha256.S0(a) + Sha256.maj(a,b,c)) >>> 0;
+      h=g; g=f; f=e; e=(d + t1)>>>0; d=c; c=b; b=a; a=(t1 + t2)>>>0;
+    }
+    this.h[0]=(this.h[0]+a)>>>0; this.h[1]=(this.h[1]+b)>>>0; this.h[2]=(this.h[2]+c)>>>0; this.h[3]=(this.h[3]+d)>>>0;
+    this.h[4]=(this.h[4]+e)>>>0; this.h[5]=(this.h[5]+f)>>>0; this.h[6]=(this.h[6]+g)>>>0; this.h[7]=(this.h[7]+h)>>>0;
+  }
+  digest(){
+    if(this.finished) throw new Error("SHA-256: digest() llamado dos veces.");
+    this.finished = true;
+
+    const bitsHashed = this.bytesHashed * 8;
+
+    this.buf[this.bufLen++] = 0x80;
+
+    if(this.bufLen > 56){
+      while(this.bufLen < 64) this.buf[this.bufLen++] = 0;
+      this._compress(this.buf);
+      this.bufLen = 0;
+    }
+    while(this.bufLen < 56) this.buf[this.bufLen++] = 0;
+
+    const hi = Math.floor(bitsHashed / 0x100000000);
+    const lo = bitsHashed >>> 0;
+    this.buf[56] = (hi>>>24)&255; this.buf[57]=(hi>>>16)&255; this.buf[58]=(hi>>>8)&255; this.buf[59]=hi&255;
+    this.buf[60] = (lo>>>24)&255; this.buf[61]=(lo>>>16)&255; this.buf[62]=(lo>>>8)&255; this.buf[63]=lo&255;
+    this._compress(this.buf);
+
+    const out = new Uint8Array(32);
+    for(let i=0;i<8;i++){
+      const v = this.h[i];
+      out[i*4]   = (v>>>24)&255;
+      out[i*4+1] = (v>>>16)&255;
+      out[i*4+2] = (v>>>8)&255;
+      out[i*4+3] = v&255;
+    }
+    return out;
+  }
+}
+Sha256.K = new Uint32Array([
+  0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+  0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+  0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+  0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+  0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+  0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+  0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+  0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+]);
+
+function bytesToHex(bytes){
+  let out = "";
+  for(let i=0;i<bytes.length;i++) out += bytes[i].toString(16).padStart(2,"0");
+  return out;
+}
+
+self.onmessage = async (ev) => {
+  const msg = ev.data || {};
+  try{
+    if(msg.type === "sha256"){
+      const { taskId, file } = msg;
+      const chunkSize = msg.chunkSize || (4*1024*1024);
+      const maxBytes = msg.maxBytes || (1024*1024*1024);
+
+      if(!file) throw new Error("Falta 'file'.");
+      if(file.size != null && file.size > maxBytes){
+        throw new Error("Archivo demasiado grande para hash.");
+      }
+
+      const h = new Sha256();
+      const reader = new FileReaderSync();
+
+      for(let off=0; off<file.size; off += chunkSize){
+        const buf = reader.readAsArrayBuffer(file.slice(off, off + chunkSize));
+        h.update(new Uint8Array(buf));
+      }
+
+      const hex = bytesToHex(h.digest());
+      self.postMessage({ type:"sha256:done", taskId, hex });
+      return;
+    }
+
+    self.postMessage({ type:"error", error:"Tipo de tarea no soportado." });
+  }catch(err){
+    self.postMessage({ type:"error", error:(err && err.message) ? err.message : String(err) });
+  }
+};
+`;
+
+
+  function createHashWorker(){
+  // Single-file mode: usar Blob Worker (no depende de worker.js externo).
+  // Nota: algunos navegadores pueden limitar workers en file://; existe fallback sin worker.
+  try{
+    const blob = new Blob([WORKER_SOURCE], { type:"text/javascript" });
+    const url = URL.createObjectURL(blob);
+    const w = new Worker(url);
+    return { worker: w, mode: "blob", url };
+  }catch(e2){
+    return { worker: null, mode: "none", error: e2 };
+  }
+}
+
+  const HASH = (() => {
+    const hw = createHashWorker();
+    const worker = hw.worker;
+
+    const pending = new Map(); // taskId -> {resolve,reject}
+    let seq = 1;
+
+    if(worker){
+      worker.onmessage = (ev) => {
+        const msg = ev.data || {};
+        const p = pending.get(msg.taskId);
+        if(!p) return;
+
+        if(msg.type === "sha256:done"){
+          pending.delete(msg.taskId);
+          p.resolve(msg.hex);
+        }else if(msg.type === "error"){
+          pending.delete(msg.taskId);
+          p.reject(new Error(msg.error || "Error de worker."));
+        }
+      };
+    }
+
+    async function sha256(file){
+      const MAX_FILE_BYTES = 1024 * 1024 * 1024; // 1 GB (ajustable)
+      const CHUNK_SIZE = 4 * 1024 * 1024; // 4 MB
+
+      if(file && file.size != null && file.size > MAX_FILE_BYTES){
+        throw new Error(`Archivo demasiado grande para hash (${formatBytes(file.size)} > ${formatBytes(MAX_FILE_BYTES)}).`);
+      }
+
+      if(worker){
+        const taskId = seq++;
+        return new Promise((resolve,reject)=>{
+          pending.set(taskId, {resolve,reject});
+          worker.postMessage({ type:"sha256", taskId, file, chunkSize: CHUNK_SIZE, maxBytes: MAX_FILE_BYTES });
+        });
+      }
+
+      // Fallback sin worker: SHA-256 incremental (por streaming) para no cargar el archivo completo en memoria
+      class Sha256 {
+        constructor(){
+          this.h = new Uint32Array([
+            0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,
+            0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19
+          ]);
+          this.buf = new Uint8Array(64);
+          this.bufLen = 0;
+          this.bytesHashed = 0;
+          this.finished = false;
+          this.tmp = new Uint32Array(64);
+        }
+        static rotr(x,n){ return (x>>>n) | (x<<(32-n)); }
+        static ch(x,y,z){ return (x & y) ^ (~x & z); }
+        static maj(x,y,z){ return (x & y) ^ (x & z) ^ (y & z); }
+        static s0(x){ return Sha256.rotr(x,7) ^ Sha256.rotr(x,18) ^ (x>>>3); }
+        static s1(x){ return Sha256.rotr(x,17) ^ Sha256.rotr(x,19) ^ (x>>>10); }
+        static S0(x){ return Sha256.rotr(x,2) ^ Sha256.rotr(x,13) ^ Sha256.rotr(x,22); }
+        static S1(x){ return Sha256.rotr(x,6) ^ Sha256.rotr(x,11) ^ Sha256.rotr(x,25); }
+        update(data){
+          if(this.finished) throw new Error("SHA-256: update() luego de digest().");
+          let pos = 0;
+          const len = data.length;
+          this.bytesHashed += len;
+          while(pos < len){
+            const take = Math.min(len - pos, 64 - this.bufLen);
+            this.buf.set(data.subarray(pos, pos + take), this.bufLen);
+            this.bufLen += take;
+            pos += take;
+            if(this.bufLen === 64){
+              this._compress(this.buf);
+              this.bufLen = 0;
+            }
+          }
+        }
+        _compress(chunk){
+          const K = Sha256.K;
+          const w = this.tmp;
+          for(let i=0;i<16;i++){
+            const j = i*4;
+            w[i] = ((chunk[j]<<24) | (chunk[j+1]<<16) | (chunk[j+2]<<8) | (chunk[j+3])) >>> 0;
+          }
+          for(let i=16;i<64;i++){
+            w[i] = (Sha256.s1(w[i-2]) + w[i-7] + Sha256.s0(w[i-15]) + w[i-16]) >>> 0;
+          }
+          let a=this.h[0], b=this.h[1], c=this.h[2], d=this.h[3], e=this.h[4], f=this.h[5], g=this.h[6], h=this.h[7];
+          for(let i=0;i<64;i++){
+            const t1 = (h + Sha256.S1(e) + Sha256.ch(e,f,g) + K[i] + w[i]) >>> 0;
+            const t2 = (Sha256.S0(a) + Sha256.maj(a,b,c)) >>> 0;
+            h=g; g=f; f=e; e=(d + t1)>>>0; d=c; c=b; b=a; a=(t1 + t2)>>>0;
+          }
+          this.h[0]=(this.h[0]+a)>>>0; this.h[1]=(this.h[1]+b)>>>0; this.h[2]=(this.h[2]+c)>>>0; this.h[3]=(this.h[3]+d)>>>0;
+          this.h[4]=(this.h[4]+e)>>>0; this.h[5]=(this.h[5]+f)>>>0; this.h[6]=(this.h[6]+g)>>>0; this.h[7]=(this.h[7]+h)>>>0;
+        }
+        digest(){
+          if(this.finished) throw new Error("SHA-256: digest() llamado dos veces.");
+          this.finished = true;
+
+          const bitsHashed = this.bytesHashed * 8;
+
+          // append 0x80
+          this.buf[this.bufLen++] = 0x80;
+
+          // pad with zeros until 56 bytes
+          if(this.bufLen > 56){
+            while(this.bufLen < 64) this.buf[this.bufLen++] = 0;
+            this._compress(this.buf);
+            this.bufLen = 0;
+          }
+          while(this.bufLen < 56) this.buf[this.bufLen++] = 0;
+
+          // append length (64-bit big-endian)
+          const hi = Math.floor(bitsHashed / 0x100000000);
+          const lo = bitsHashed >>> 0;
+          this.buf[56] = (hi>>>24)&255; this.buf[57]=(hi>>>16)&255; this.buf[58]=(hi>>>8)&255; this.buf[59]=hi&255;
+          this.buf[60] = (lo>>>24)&255; this.buf[61]=(lo>>>16)&255; this.buf[62]=(lo>>>8)&255; this.buf[63]=lo&255;
+          this._compress(this.buf);
+
+          const out = new Uint8Array(32);
+          for(let i=0;i<8;i++){
+            const v = this.h[i];
+            out[i*4]   = (v>>>24)&255;
+            out[i*4+1] = (v>>>16)&255;
+            out[i*4+2] = (v>>>8)&255;
+            out[i*4+3] = v&255;
+          }
+          return out;
+        }
+      }
+      Sha256.K = new Uint32Array([
+        0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+        0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+        0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+        0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+        0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+        0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+        0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+        0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2
+      ]);
+
+      async function sha256HexByStream(f){
+        const h = new Sha256();
+
+        if(f && typeof f.stream === "function"){
+          const reader = f.stream().getReader();
+          while(true){
+            const {value, done} = await reader.read();
+            if(done) break;
+            if(value && value.length) h.update(value);
+          }
+        }else{
+          // Fallback: slices + FileReader
+          const readSlice = (blob)=>new Promise((resolve,reject)=>{
+            const fr = new FileReader();
+            fr.onload = ()=>resolve(fr.result);
+            fr.onerror = ()=>reject(fr.error || new Error("FileReader error"));
+            fr.readAsArrayBuffer(blob);
+          });
+          for(let off=0; off<f.size; off+=CHUNK_SIZE){
+            const buf = await readSlice(f.slice(off, off+CHUNK_SIZE));
+            h.update(new Uint8Array(buf));
+            await yieldUI();
+          }
+        }
+
+        const digest = h.digest();
+        let out = "";
+        for(let i=0;i<digest.length;i++) out += digest[i].toString(16).padStart(2,"0");
+        return out;
+      }
+
+      return sha256HexByStream(file);
+    }
+
+    function cleanup(){
+      if(worker){
+        try{ worker.terminate(); }catch(_e){}
+      }
+      if(hw.url){
+        try{ URL.revokeObjectURL(hw.url); }catch(_e){}
+      }
+    }
+
+    return { sha256, cleanup, mode: hw.mode };
+  })();
+
+  // -------------------------
+  // Utilities
+  // -------------------------
+  function bufferToHex(buf){
+    const bytes = new Uint8Array(buf);
+    let out = "";
+    for(let i=0;i<bytes.length;i++) out += bytes[i].toString(16).padStart(2,"0");
+    return out;
+  }
+
+  function formatBytes(bytes){
+    const units = ["B","KB","MB","GB","TB"];
+    let v = bytes;
+    let i = 0;
+    while(v >= 1024 && i < units.length-1){
+      v /= 1024; i++;
+    }
+    const fixed = i === 0 ? 0 : (v < 10 ? 2 : 1);
+    return `${v.toFixed(fixed)} ${units[i]}`;
+  }
+
+  function formatDate(ms){
+    try{
+      const d = new Date(ms);
+      return d.toLocaleString("es-CO");
+    }catch(_e){
+      return String(ms);
+    }
+  }
+
+  function extOf(name){
+    const i = name.lastIndexOf(".");
+    if(i <= 0) return "";
+    return name.slice(i+1).toLowerCase();
+  }
+
+  function kindOf(file){
+    const type = (file.type || "").toLowerCase();
+    const ext = extOf(file.name);
+
+    const textExts = new Set(["txt","md","csv","tsv","json","xml","html","htm","log","rtf","tex",
+      "yaml","yml","ini","cfg","conf","toml",
+      "js","mjs","cjs","jse","ts","jsx","tsx","py","java","c","cpp","h","hpp","go","rs","php","rb","sql",
+      "bas","gs","css","scss","less","bat","cmd","ps1","sh","zsh"]);
+
+    if(type.startsWith("text/") || textExts.has(ext)) return "text";
+    if(type === "application/pdf" || ext === "pdf") return "pdf";
+
+    // Office (texto / hojas / presentaciones)
+    if(type.includes("officedocument.wordprocessingml.document") || ext === "docx") return "docx";
+    if(type.includes("officedocument.spreadsheetml.sheet") || ext === "xlsx" || ext === "xls") return "sheet";
+    if(type.includes("officedocument.presentationml.presentation") || ext === "pptx") return "pptx";
+
+    // Legacy Office (best-effort: .xls via SheetJS; .doc/.ppt no se pueden extraer de forma fiable en navegador sin backend)
+    if(ext === "doc") return "doc";
+    if(ext === "ppt") return "ppt";
+
+    if(type.startsWith("image/") && ["png","jpg","jpeg","jpe","gif","bmp","tif","tiff","webp"].includes(ext)) return "image";
+    if(type.startsWith("audio/")) return "audio";
+    if(type.startsWith("video/")) return "video";
+
+    return "other";
+  }
+
+  function labelFor(percent){
+    if(percent === null || percent === undefined) return "No soportado";
+    if(percent >= 99.5) return "Copia exacta";
+    if(percent >= 90) return "Muy similar";
+    if(percent >= 80) return "Similar";
+    if(percent >= 50) return "Baja similitud";
+    return "Baja similitud";
+  }
+
+  function computeSimilarityEligibilitySummary(){
+    const byType = { text:0, pdf:0, docx:0, sheet:0, pptx:0, image:0, audio:0, video:0, other:0, doc:0, ppt:0 };
+    let skippedNoText = 0;
+    let skippedUnsupported = 0;
+    let skippedNotComparable = 0;
+
+    const eligibleIds = [];
+    for(const r of STATE.files){
+      // Formatos binarios / media (comparación heurística por huella)
+      if(["audio","video","other","doc","ppt"].includes(r.kind)){
+        if(r.fingerprints?.bin?.h1){
+          byType[r.kind]++; eligibleIds.push(r.id);
+        }else{
+          skippedNoText++;
+        }
+        continue;
+      }
+
+      if(r.kind === "image"){
+        if(r.fingerprints?.image){
+          byType.image++; eligibleIds.push(r.id);
+        }else{
+          skippedNoText++;
+        }
+        continue;
+      }
+
+      if(["text","pdf","docx","sheet","pptx"].includes(r.kind)){
+        const haveText = (r.extracted?.text && r.extracted.text.length > 0) || (r.fingerprints?.text?.sig);
+        if(haveText){
+          byType[r.kind]++; eligibleIds.push(r.id);
+        }else{
+          skippedNoText++;
+        }
+        continue;
+      }
+
+      skippedNotComparable++;
+    }
+
+    const eligibleTotal = eligibleIds.length;
+    const possiblePairs = eligibleTotal >= 2 ? (eligibleTotal*(eligibleTotal-1))/2 : 0;
+    const skippedTotal = skippedNoText + skippedUnsupported + skippedNotComparable;
+    return { eligibleIds, eligibleTotal, possiblePairs, skippedTotal, skippedNoText, skippedUnsupported, skippedNotComparable, byType };
+  }
+
+
+
+  function yieldUI(){
+    return new Promise((resolve)=>requestAnimationFrame(()=>resolve()));
+  }
+
+  // -------------------------
+  // Text normalization + shingling + MinHash
+  // -------------------------
+  function normalizeText(s, aggressive){
+    let t = String(s || "");
+    t = t.toLowerCase();
+
+    // normaliza saltos a \n
+    t = t.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+
+    // colapsa repetidos
+    t = t.replace(/\n{3,}/g, "\n\n");
+
+    if(aggressive){
+      // quitar puntuación (unicode si el navegador lo soporta)
+      try{
+        t = t.replace(/[^\p{L}\p{N}\s]/gu, " ");
+      }catch(_e){
+        t = t.replace(/[^a-z0-9\s]/g, " ");
+      }
+    }
+
+    // colapsa espacios
+    t = t.replace(/[ \t\f\v]+/g, " ");
+    t = t.replace(/\s+\n/g, "\n").replace(/\n\s+/g, "\n");
+    t = t.trim();
+    return t;
+  }
+
+  function tokenizeWords(normText){
+    // tokenización simple por whitespace; mantiene palabras con acentos
+    if(!normText) return [];
+    const parts = normText.split(/\s+/g);
+    const out = [];
+    for(const p of parts){
+      const tok = p.trim();
+      if(tok) out.push(tok);
+    }
+    return out;
+  }
+
+  // FNV-1a 32-bit for strings
+  function fnv1a32(str){
+    let h = 0x811c9dc5;
+    for(let i=0;i<str.length;i++){
+      h ^= str.charCodeAt(i);
+      h = Math.imul(h, 0x01000193);
+    }
+    return h >>> 0;
+  }
+
+  function buildShingles(tokens, k=5, maxShingles=120000){
+    if(tokens.length < k) return new Uint32Array(0);
+
+    const n = tokens.length - k + 1;
+    const take = Math.min(n, maxShingles);
+
+    // downsample if too many
+    const step = n > take ? Math.ceil(n / take) : 1;
+
+    const set = new Set();
+    for(let i=0;i<n;i+=step){
+      const sh = tokens.slice(i, i+k).join(" ");
+      set.add(fnv1a32(sh));
+    }
+
+    const arr = Array.from(set);
+    arr.sort((a,b)=>a-b);
+    return Uint32Array.from(arr);
+  }
+
+  function makeMinHashSeeds(count=64){
+    // deterministic PRNG
+    let x = 0x12345678;
+    const seeds = [];
+    for(let i=0;i<count;i++){
+      // xorshift32
+      x ^= (x << 13) >>> 0;
+      x ^= (x >>> 17) >>> 0;
+      x ^= (x << 5) >>> 0;
+      const a = (x | 1) >>> 0; // odd
+      x ^= (x << 13) >>> 0;
+      x ^= (x >>> 17) >>> 0;
+      x ^= (x << 5) >>> 0;
+      const b = x >>> 0;
+      seeds.push([a,b]);
+    }
+    return seeds;
+  }
+
+
+  const _MINHASH_SEED_CACHE = new Map();
+  function getMinHashSeeds(n){
+    const k = Number(n) || 64;
+    if(_MINHASH_SEED_CACHE.has(k)) return _MINHASH_SEED_CACHE.get(k);
+    const seeds = makeMinHashSeeds(k);
+    _MINHASH_SEED_CACHE.set(k, seeds);
+    return seeds;
+  }
+
+  function minhashSignature(shingles, sigSize){
+    const n = Number(sigSize || STATE.settings.minhashSize || 64);
+    const seeds = getMinHashSeeds(n);
+    const sig = new Array(n).fill(0xFFFFFFFF);
+    const len = shingles.length;
+
+    for(let i=0;i<len;i++){
+      const x = shingles[i] >>> 0;
+      for(let j=0;j<n;j++){
+        const [a,b] = seeds[j];
+        const hv = (Math.imul(a, x) + b) >>> 0;
+        if(hv < sig[j]) sig[j] = hv;
+      }
+    }
+    return sig;
+  }
+
+  function estJaccardFromSig(sigA, sigB){
+    if(!sigA || !sigB) return null;
+    const n = Math.min(sigA.length, sigB.length);
+    if(n === 0) return null;
+    let eq = 0;
+    for(let i=0;i<n;i++) if(sigA[i] === sigB[i]) eq++;
+    return eq / n;
+  }
+
+  function exactJaccardSorted(a, b){
+    // a,b are Uint32Array sorted unique
+    if(!a || !b) return null;
+    let i=0, j=0, inter=0;
+    while(i<a.length && j<b.length){
+      const va = a[i], vb = b[j];
+      if(va === vb){ inter++; i++; j++; }
+      else if(va < vb) i++;
+      else j++;
+    }
+    const uni = a.length + b.length - inter;
+    if(uni === 0) return 0;
+    return inter / uni;
+  }
+
+  // -------------------------
+  // PDF extraction (pdf.js)
+  // -------------------------
+  async function ensurePdfJs(){
+    const start = Date.now();
+    while(!window.pdfjsLib){
+      await new Promise(r=>setTimeout(r, 25));
+      if(Date.now() - start > 8000) throw new Error("pdf.js no cargó.");
+    }
+    const pdfjsLib = window.pdfjsLib;
+
+    // Reducir ruido de consola (warnings internos de pdf.js)
+    try{
+      if(pdfjsLib?.setVerbosityLevel && pdfjsLib?.VerbosityLevel){
+        pdfjsLib.setVerbosityLevel(pdfjsLib.VerbosityLevel.ERRORS);
+      }else if(pdfjsLib?.VerbosityLevel && typeof pdfjsLib.verbosity !== "undefined"){
+        pdfjsLib.verbosity = pdfjsLib.VerbosityLevel.ERRORS;
+      }
+    }catch(_e){}
+
+    // Para evitar bloqueos en file://: deshabilitar worker.
+    try{ pdfjsLib.disableWorker = true; }catch(_e){}
+    try{
+      pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    }catch(_e){}
+
+    return pdfjsLib;
+  }
+
+  
+  async function extractPdfText(fileRec){
+    const pdfjsLib = await ensurePdfJs();
+
+    const ab = await fileRec.file.arrayBuffer();
+    const doc = await pdfjsLib.getDocument({ data: ab }).promise;
+
+    const pages = doc.numPages;
+    const texts = [];
+    for(let p=1;p<=pages;p++){
+      const page = await doc.getPage(p);
+      const content = await page.getTextContent();
+      const pageText = content.items.map(it => it.str).join(" ").trim();
+      texts.push(pageText);
+      if(p % 2 === 0) await yieldUI();
+    }
+
+    const full = texts.join("\n\n").trim();
+
+    // Indicador: PDF con poco texto extraído (posible escaneo)
+    const cleanLen = full.replace(/\s+/g," ").trim().length;
+    const lowText = cleanLen < Math.max(120, 40 * pages);
+
+    // Sin portada: omite N páginas (configurable). Si N=1, aplica heurística opcional para omitir 2.
+    let startIdx = Math.max(0, Math.min(pages, Number(STATE.settings.pdfSkipPages ?? 1)));
+    if(startIdx === 1){
+      const firstLen = (texts[0] || "").replace(/\s+/g," ").trim().length;
+      const secondLen = (texts[1] || "").replace(/\s+/g," ").trim().length;
+      if(firstLen < 80 && pages >= 2 && secondLen < 120){
+        startIdx = 2;
+      }
+    }
+    const noCover = texts.slice(startIdx).join("\n\n").trim();
+
+    return { full, noCover, pages, lowText };
+  }
+
+
+  
+  // -------------------------
+  // OCR opcional para PDF (tesseract.js, bajo demanda)
+  // -------------------------
+  function loadScriptOnce(url, globalName){
+    return new Promise((resolve,reject)=>{
+      if(globalName && window[globalName]) return resolve(window[globalName]);
+      const existing = document.querySelector(`script[data-src="${url}"]`);
+      if(existing){
+        existing.addEventListener("load", ()=>resolve(globalName ? window[globalName] : true));
+        existing.addEventListener("error", ()=>reject(new Error("No se pudo cargar script.")));
+        return;
+      }
+      const s = document.createElement("script");
+      s.defer = true;
+      s.src = url;
+      s.dataset.src = url;
+      s.onload = ()=>resolve(globalName ? window[globalName] : true);
+      s.onerror = ()=>reject(new Error("No se pudo cargar script."));
+      document.head.appendChild(s);
+    });
+  }
+
+  async function ensureTesseract(){
+    // tesseract.js v5 (CDN)
+    await loadScriptOnce("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js", "Tesseract");
+    if(!window.Tesseract) throw new Error("tesseract.js no cargó.");
+    return window.Tesseract;
+  }
+
+  async function ocrPdfIntoText(fileRec, { lang="spa", maxPages=0 } = {}){
+    const Tesseract = await ensureTesseract();
+    const pdfjsLib = await ensurePdfJs();
+
+    const ab = await fileRec.file.arrayBuffer();
+    const doc = await pdfjsLib.getDocument({ data: ab }).promise;
+
+    const pages = doc.numPages;
+    const take = maxPages && maxPages > 0 ? Math.min(pages, maxPages) : pages;
+    const out = [];
+
+    for(let p=1; p<=take; p++){
+      if(STATE.cancelRequested) throw new Error("Cancelado por el usuario.");
+      setFileStatus(fileRec.id, `OCR (pág. ${p}/${take})…`);
+
+      const page = await doc.getPage(p);
+      const viewport = page.getViewport({ scale: 1.6 });
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      canvas.width = Math.ceil(viewport.width);
+      canvas.height = Math.ceil(viewport.height);
+
+      await page.render({ canvasContext: ctx, viewport }).promise;
+
+      // OCR
+      let txt = "";
+      try{
+        const res = await Tesseract.recognize(canvas, lang);
+        txt = (res?.data?.text || "").trim();
+      }catch(e){
+        // fallback a inglés si falla descarga de idioma
+        const res = await Tesseract.recognize(canvas, "eng");
+        txt = (res?.data?.text || "").trim();
+      }
+      if(txt) out.push(txt);
+      await yieldUI();
+    }
+
+    return out.join("\n\n").trim();
+  }
+
+// -------------------------
+  // DOCX extraction (mammoth)
+  // -------------------------
+  async function ensureMammoth(){
+    const start = Date.now();
+    while(!window.mammoth){
+      await new Promise(r=>setTimeout(r, 25));
+      if(Date.now() - start > 8000) throw new Error("mammoth.js no cargó.");
+    }
+    return window.mammoth;
+  }
+
+  
+  function docxNoCoverHeuristic(text, ratioPct){
+    const t = String(text || "");
+    const low = t.toLowerCase();
+
+    const patterns = [
+      /\n\s*1\s*[\.|\)]\s*(introducci[oó]n|cap[ií]tulo|objetivos?)\b/i,
+      /\n\s*introducci[oó]n\b/i,
+      /\n\s*cap[ií]tulo\s*1\b/i,
+      /\n\s*resumen\b/i,
+      /\n\s*abstract\b/i,
+    ];
+    for(const re of patterns){
+      const m = low.match(re);
+      if(m && m.index !== undefined && m.index > 200){
+        return t.slice(m.index);
+      }
+    }
+
+    // fallback configurable: omite % inicial si no se detecta inicio de cuerpo
+    const pct = Math.max(0, Math.min(50, Number(ratioPct ?? STATE.settings.docxSkipRatio ?? 8)));
+    const ratio = pct / 100;
+    let skip = Math.floor(t.length * ratio);
+    skip = Math.max(800, Math.min(4000, skip));
+    if(t.length > skip) return t.slice(skip);
+    return "";
+  }
+
+
+  async function extractDocxText(fileRec){
+    const mammoth = await ensureMammoth();
+    const ab = await fileRec.file.arrayBuffer();
+    const res = await mammoth.extractRawText({ arrayBuffer: ab });
+    const full = (res.value || "").trim();
+    const noCover = docxNoCoverHeuristic(full, STATE.settings.docxSkipRatio).trim();
+    return { full, noCover };
+  }
+
+  
+  // -------------------------
+  // XLSX/XLS (SheetJS)
+  // -------------------------
+  async function extractSheetText(fileRec){
+    if(!window.XLSX) throw new Error("Librería XLSX no disponible.");
+    const ab = await fileRec.file.arrayBuffer();
+    const wb = window.XLSX.read(ab, { type: "array" });
+    const parts = [];
+    for(const name of (wb.SheetNames || [])){
+      const ws = wb.Sheets[name];
+      if(!ws) continue;
+      // CSV es rápido y suficiente para similitud
+      const csv = window.XLSX.utils.sheet_to_csv(ws, { FS: "\t", RS: "\n" });
+      const cleaned = (csv || "").trim();
+      if(cleaned){
+        parts.push(`# Hoja: ${name}\n${cleaned}`);
+      }
+    }
+    const full = parts.join("\n\n").trim();
+    // Para hojas no aplicamos heurística de portada
+    const noCover = full;
+    return { full, noCover };
+  }
+
+  // -------------------------
+  // PPTX (JSZip + XML)
+  // -------------------------
+  async function extractPptxText(fileRec){
+    if(!window.JSZip) throw new Error("Librería JSZip no disponible.");
+    const ab = await fileRec.file.arrayBuffer();
+    const zip = await window.JSZip.loadAsync(ab);
+    const slideFiles = Object.keys(zip.files)
+      .filter(p => /^ppt\/slides\/slide\d+\.xml$/i.test(p))
+      .sort((a,b)=>{
+        const na = Number((a.match(/slide(\d+)\.xml/i)||[])[1]||0);
+        const nb = Number((b.match(/slide(\d+)\.xml/i)||[])[1]||0);
+        return na-nb;
+      });
+
+    const parser = new DOMParser();
+    const slidesText = [];
+    for(const path of slideFiles){
+      const xml = await zip.file(path).async("string");
+      const doc = parser.parseFromString(xml, "application/xml");
+      const nodes = Array.from(doc.getElementsByTagName("a:t"));
+      const t = nodes.map(n => (n.textContent||"").trim()).filter(Boolean).join(" ");
+      if(t) slidesText.push(t);
+    }
+    const full = slidesText.join("\n\n").trim();
+    const noCover = full; // por ahora no-cover = full
+    return { full, noCover };
+  }
+
+// -------------------------
+  // Image dHash
+  // -------------------------
+  function loadImageFromFile(file){
+    return new Promise((resolve,reject)=>{
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+      img.onerror = (e) => { URL.revokeObjectURL(url); reject(new Error("No se pudo cargar imagen.")); };
+      img.src = url;
+    });
+  }
+
+  function computeDHash(img, size=9){ // 9x8 -> 64 comparisons
+    const w = size, h = 8;
+    const canvas = document.createElement("canvas");
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+    ctx.drawImage(img, 0, 0, w, h);
+    const data = ctx.getImageData(0,0,w,h).data;
+
+    // grayscale values
+    const gray = new Array(w*h);
+    for(let i=0;i<w*h;i++){
+      const r = data[i*4], g = data[i*4+1], b = data[i*4+2];
+      gray[i] = (r*0.299 + g*0.587 + b*0.114);
+    }
+
+    let hash = 0n;
+    let bit = 0n;
+    // compare adjacent columns
+    for(let y=0;y<h;y++){
+      for(let x=0;x<w-1;x++){
+        const left = gray[y*w + x];
+        const right = gray[y*w + x + 1];
+        if(left > right){
+          hash |= (1n << bit);
+        }
+        bit++;
+      }
+    }
+    return hash; // 64 bits in bigint
+  }
+
+  function hamming64(a,b){
+    let x = a ^ b;
+    let dist = 0;
+    while(x){
+      dist += Number(x & 1n);
+      x >>= 1n;
+    }
+    return dist;
+  }
+
+  function dhashSimilarity(a,b){
+    const dist = hamming64(a,b);
+    return Math.max(0, Math.min(100, (1 - dist/64) * 100));
+  }
+
+  // -------------------------
+  // Audio/Video metadata
+  // -------------------------
+  function getMediaDuration(fileRec){
+    return new Promise((resolve)=>{
+      const isAudio = fileRec.kind === "audio";
+      const el = document.createElement(isAudio ? "audio" : "video");
+      el.preload = "metadata";
+      el.muted = true;
+
+      const url = URL.createObjectURL(fileRec.file);
+      el.onloadedmetadata = () => {
+        const d = isFinite(el.duration) ? el.duration : null;
+        URL.revokeObjectURL(url);
+        resolve(d);
+      };
+      el.onerror = () => {
+        URL.revokeObjectURL(url);
+        resolve(null);
+      };
+      el.src = url;
+    });
+  }
+
+  // -------------------------
+  // Binary fingerprints (otros / audio / video / formatos no textuales)
+  // -------------------------
+  async function ensureBinaryFingerprint(fileRec){
+    if(fileRec.fingerprints && fileRec.fingerprints.bin && fileRec.fingerprints.bin.h1) return fileRec.fingerprints.bin;
+    if(!fileRec.fingerprints) fileRec.fingerprints = {};
+    const size = fileRec.size || (fileRec.file ? fileRec.file.size : 0) || 0;
+    // Tomamos 3 cortes (inicio/medio/fin) para una huella robusta sin cargar el archivo completo.
+    const CHUNK = Math.min(256 * 1024, Math.max(16 * 1024, size)); // 16KB..256KB
+    const file = fileRec.file;
+
+    const first = file.slice(0, Math.min(CHUNK, size));
+    const midStart = Math.max(0, Math.floor(size/2 - CHUNK/2));
+    const mid = file.slice(midStart, Math.min(size, midStart + CHUNK));
+    const lastStart = Math.max(0, size - CHUNK);
+    const last = file.slice(lastStart, size);
+
+    // hashes de cada fragmento (rápido y estable)
+    const [h1, h2, h3] = await Promise.all([
+      HASH.sha256(first),
+      HASH.sha256(mid),
+      HASH.sha256(last)
+    ]);
+
+    const fp = { h1, h2, h3, chunkBytes: CHUNK };
+    fileRec.fingerprints.bin = fp;
+    return fp;
+  }
+
+  function binaryHeuristicSimilarity(a, b){
+    // Similaridad heurística basada en:
+    //  - coincidencia de hashes de fragmentos (0..1)
+    //  - cercanía de tamaño (0..1)
+    //  - (audio/video) cercanía de duración (0..1)
+    const fa = a.fingerprints?.bin;
+    const fb = b.fingerprints?.bin;
+    if(!fa || !fb) return null;
+
+    const match = (fa.h1 === fb.h1) + (fa.h2 === fb.h2) + (fa.h3 === fb.h3);
+    const chunkScore = match / 3;
+
+    const sa = Math.max(1, a.size || 1);
+    const sb = Math.max(1, b.size || 1);
+    const ratio = Math.max(sa, sb) / Math.min(sa, sb);
+    const sizeScore = Math.max(0, 1 - Math.min(1, (ratio - 1) / 0.35)); // tolera ~35% antes de caer a 0
+
+    let durScore = 0.0;
+    let useDur = false;
+    if((a.kind === "audio" || a.kind === "video") && (b.kind === a.kind)){
+      const da = a.fingerprints?.av?.duration;
+      const db = b.fingerprints?.av?.duration;
+      if(isFinite(da) && isFinite(db) && da != null && db != null){
+        useDur = true;
+        const m = Math.max(1, Math.max(da, db));
+        durScore = Math.max(0, 1 - (Math.abs(da - db) / m));
+      }
+    }
+
+    let score;
+    if(useDur){
+      score = 0.50 * chunkScore + 0.20 * sizeScore + 0.30 * durScore;
+    }else{
+      score = 0.70 * chunkScore + 0.30 * sizeScore;
+    }
+    return Math.round(score * 1000) / 10; // 1 decimal
+  }
+
+
+  // -------------------------
+  // UI rendering
+  // -------------------------
+  function setBusy(on){
+    STATE.isBusy = on;
+    els.btnAnalyze.disabled = on || STATE.files.length === 0;
+    els.btnClear.disabled = on || STATE.files.length === 0;
+    if(els.btnStop) els.btnStop.disabled = !on;
+    if(!on) STATE.cancelRequested = false;
+    els.btnExportCSV.disabled = on || !STATE.analysis;
+    els.btnExportJSON.disabled = on || !STATE.analysis;
+    els.btnExportPDF.disabled = on || !STATE.analysis;
+
+    els.fileInput.disabled = on;
+    els.dropZone.classList.toggle("disabled", on);
+  }
+
+  function updateCounts(){
+    els.pillCounts.textContent = `${STATE.files.length} archivos`;
+    els.pillCounts.className = "pill " + (STATE.files.length ? "ok" : "");
+    els.btnAnalyze.disabled = STATE.isBusy || STATE.files.length === 0;
+    els.btnClear.disabled = STATE.isBusy || STATE.files.length === 0;
+    els.fileStats.textContent = `${STATE.files.length} archivos cargados. Worker SHA‑256: ${HASH.mode}.`;
+  }
+
+  function setProgress(pct, text, mini){
+    els.progressBar.style.width = `${Math.max(0,Math.min(100,pct))}%`;
+    els.progressText.textContent = text || "—";
+    els.progressMini.textContent = mini || "";
+  }
+
+  function toast(msg){
+    try{
+      const prev = els.progressMini.textContent;
+      els.progressMini.textContent = msg;
+      setTimeout(()=>{ 
+        if(!STATE.isBusy) els.progressMini.textContent = prev;
+      }, 1800);
+    }catch(_e){}
+  }
+
+
+  function setFileStatus(id, status){
+    const rec = STATE.byId.get(id);
+    if(!rec) return;
+    rec.status = status;
+    const row = document.querySelector(`tr[data-id="${id}"] td[data-col="status"]`);
+    if(row) row.textContent = status;
+  }
+
+  
+  // -------------------------
+  // Filtros por extensión (3 tablas)
+  // -------------------------
+  function getExt(name){
+    const m = String(name||"").toLowerCase().match(/\.([a-z0-9]+)$/i);
+    return m ? m[1] : "";
+  }
+  function extLabel(ext){
+    return ext ? ext.toUpperCase() : "SIN_EXT";
+  }
+
+  function extGroup(ext){
+    ext = String(ext||"").toLowerCase();
+    if(ext === "pdf") return "pdf";
+    if(["doc","docx","rtf","odt"].includes(ext)) return "doc";
+    if(["xls","xlsx","xlsm","csv","ods"].includes(ext)) return "xls";
+    if(["ppt","pptx","pps","ppsx","odp"].includes(ext)) return "ppt";
+    if(["jpg","jpeg","jpe","png","gif","bmp","tif","tiff","webp","svg"].includes(ext)) return "img";
+    if(["zip","rar","7z","tar","gz","bz2","xz"].includes(ext)) return "zip";
+    if(["mp3","m4a","aac","wav","flac","ogg","opus"].includes(ext)) return "aud";
+    if(["mp4","mov","m4v","webm","avi","mkv"].includes(ext)) return "vid";
+    if(["html","htm","css","js","ts","json","xml","txt","md","yml","yaml","ini","cfg","bas","gs","java","py","c","cpp","cs","php","rb","go","rs","sql"].includes(ext)) return "code";
+    return "other";
+  }
+
+  function ensureFilterSet(which){
+    if(!STATE.filters) STATE.filters = { files: new Set(), sim: new Set(), exact: new Set() };
+    if(!STATE.filters[which]) STATE.filters[which] = new Set();
+    return STATE.filters[which];
+  }
+  function renderFilterBar(container, availableExts, which){
+    if(!container) return;
+    const sel = ensureFilterSet(which);
+
+    // mantener selección solo si sigue existiendo
+    const avail = new Set(availableExts);
+    for(const x of Array.from(sel)){
+      if(!avail.has(x)) sel.delete(x);
+    }
+
+    const makeBtn = (label, active, onClick, ext)=>{
+      const b = document.createElement("button");
+      b.type = "button";
+      const grp = (ext === null || ext === undefined) ? "all" : extGroup(ext);
+      b.className = `btn ghost btn-sm filterchip ext-${grp}${active ? " active" : ""}`;
+      b.textContent = label;
+      b.addEventListener("click", onClick);
+      return b;
+    };
+
+    container.innerHTML = "";
+    // "Todos"
+    container.appendChild(makeBtn("Todos", sel.size===0, ()=>{
+      sel.clear();
+      renderAllTables();
+    }, null));
+
+    // Extensiones
+    availableExts
+      .slice()
+      .sort((a,b)=>a.localeCompare(b, "es", {sensitivity:"base"}))
+      .forEach(ext=>{
+        container.appendChild(makeBtn(extLabel(ext), sel.has(ext), ()=>{
+          if(sel.has(ext)) sel.delete(ext); else sel.add(ext);
+          renderAllTables();
+        }, ext));
+      });
+  }
+
+  function passExtFilter(which, extA, extB=null){
+    const sel = ensureFilterSet(which);
+    if(sel.size===0) return true;
+    if(extB==null) return sel.has(extA);
+    return sel.has(extA) || sel.has(extB);
+  }
+
+  function renderAllTables(){
+    renderFilesTable();
+    renderExactTable();
+    renderSimPairs();
+  }
+
+function renderFilesTable(){
+  els.filesTbody.innerHTML = "";
+
+  const all = Array.from(STATE.files);
+  // Filtros por extensión (Files)
+  const fileExts = Array.from(new Set(all.map(r=>getExt(r.name)).filter(Boolean)));
+  renderFilterBar(els.filesFilters, fileExts, "files");
+
+  const origPos = new Map(all.map((r,i)=>[r.id, i]));
+
+  // Filtro por búsqueda
+  const q = (TABLE.files.q || "").trim().toLowerCase();
+  let rows = q ? all.filter(r=>{
+    const hay = `${r.name||""} ${r.type||""} ${r.kind||""} ${r.status||""} ${r.size||""}`.toLowerCase();
+    return hay.includes(q);
+  }) : all;
+
+  // Aplicar filtro por extensión (Files)
+  rows = rows.filter(r=>passExtFilter("files", getExt(r.name)));
+  
+  { const b = document.getElementById("filesCountBadge"); if(b) b.textContent = String(rows.length); }
+// Ordenamiento por encabezados
+  const field = TABLE.files.sortField || "name";
+  const dir = (TABLE.files.sortDir === "desc") ? -1 : 1;
+
+  const get = (r) => {
+    if(field === "idx") return origPos.get(r.id) ?? 0;
+    if(field === "name") return r.name || "";
+    if(field === "type") return r.type || "";
+    if(field === "size") return r.size || 0;
+    if(field === "lastModified") return r.lastModified || 0;
+    if(field === "kind") return r.kind || "";
+    if(field === "status") return r.status || "";
+    if(field === "actions") return 0;
+    return r.name || "";
+  };
+
+  rows.sort((a,b)=>{
+    const av = get(a);
+    const bv = get(b);
+    if(typeof av === "number" && typeof bv === "number"){
+      return (av - bv) * dir;
+    }
+    return String(av).localeCompare(String(bv), "es", { sensitivity:"base" }) * dir;
+  });
+
+  const frag = document.createDocumentFragment();
+  rows.forEach((rec, idx)=>{
+    const tr = document.createElement("tr");
+    tr.dataset.id = String(rec.id);
+    tr.innerHTML = `
+      <td class="center">${idx+1}</td>
+      <td class="wrapcell"><span class="full" title="${escapeHtml(rec.name)}">${escapeHtml(rec.name)}</span></td>
+      <td class="muted typecell">${escapeHtml(rec.type || "—")}</td>
+      <td class="right">${formatBytes(rec.size)}</td>
+      <td class="muted">${formatDate(rec.lastModified)}</td>
+      <td>${renderKindBadge(rec.kind)}</td>
+      <td>${renderStatusBadge(rec.status)}${renderPdfLowTextBadge(rec)}</td>
+      <td class="actions">
+        ${renderPdfOcrButton(rec)}
+        <button class="icon-btn danger" data-action="remove" data-id="${rec.id}" aria-label="Eliminar archivo" title="Eliminar">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M6 6l12 12M18 6L6 18" stroke="currentColor" stroke-width="2.6" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </td>
+    `;
+    frag.appendChild(tr);
+  });
+
+  els.filesTbody.appendChild(frag);
+
+  const tableEl = document.querySelector('[aria-label="Tabla de archivos"] table');
+  if(tableEl) updateSortIndicators(tableEl, TABLE.files);
+}
+
+  function renderExactGroups(groups){
+  // Compat: la lógica de análisis sigue llamando renderExactGroups, pero ahora renderiza tabla
+  renderExactTable(groups);
+}
+
+function renderExactTable(groups = (STATE.analysis?.exactGroups || [])){
+  if(!els.exactTbody) return;
+  els.exactTbody.innerHTML = "";
+
+  if(!groups || !groups.length){
+    els.exactTbody.innerHTML = `<tr><td colspan="7" class="muted">No se detectaron copias exactas (2+ archivos con mismo tamaño y SHA‑256).</td></tr>`;
+    { const b=document.getElementById("exactCountBadge"); if(b) b.textContent="0"; }
+    return;
+  }
+
+  const rows = [];
+  for(const g of groups){
+    const fids = Array.isArray(g?.files) ? g.files
+      : Array.isArray(g?.ids) ? g.ids
+      : Array.isArray(g?.fileIds) ? g.fileIds
+      : Array.isArray(g?.items) ? g.items.map(x=>x.id)
+      : [];
+    for(const fid of fids){
+      const r = STATE.byId.get(fid);
+      if(!r) continue;
+      rows.push({
+        groupIndex: 0,
+        name: r.name,
+        type: r.type || "—",
+        size: r.size,
+        lastModified: r.lastModified,
+        sha: g.sha256,
+      });
+    }
+  }
+
+  // group index stable by sha
+  const shaOrder = Array.from(new Set(rows.map(x=>x.sha)));
+  const shaToIdx = new Map(shaOrder.map((s,i)=>[s, i+1]));
+  rows.forEach(r => r.groupIndex = shaToIdx.get(r.sha));
+
+  // Filtros por extensión (Exactos)
+  const exactExts = Array.from(new Set(rows.map(r=>getExt(r.name)).filter(Boolean)));
+  renderFilterBar(els.exactFilters, exactExts, "exact");
+
+  // search
+  const q = (TABLE.exact.q || "").trim().toLowerCase();
+  let filtered = q ? rows.filter(r=>{
+    const hay = `${r.groupIndex} ${r.name} ${r.type} ${r.size} ${r.sha}`.toLowerCase();
+    return hay.includes(q);
+  }) : rows;
+
+  // Aplicar filtro por extensión (Exactos)
+  filtered = filtered.filter(r=>passExtFilter("exact", getExt(r.name)));
+  
+  { const b = document.getElementById("exactCountBadge"); if(b) b.textContent = String(filtered.length); }
+// sort
+  const field = TABLE.exact.sortField;
+  const dir = TABLE.exact.sortDir === "desc" ? -1 : 1;
+
+  filtered.sort((a,b)=>{
+    let av, bv;
+    if(field === "group"){ av = a.groupIndex; bv = b.groupIndex; }
+    else if(field === "name"){ av = a.name; bv = b.name; }
+    else if(field === "size"){ av = a.size; bv = b.size; }
+    else if(field === "type"){ av = a.type; bv = b.type; }
+    else if(field === "sha"){ av = a.sha; bv = b.sha; }
+    else { av = a.name; bv = b.name; }
+
+    if(typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
+    return String(av).localeCompare(String(bv), "es", { sensitivity:"base" }) * dir;
+  });
+
+  const frag = document.createDocumentFragment();
+  for(const r of filtered){
+  const tr = document.createElement("tr");
+  const shaShort = (r.sha && r.sha.length > 22) ? (r.sha.slice(0,10) + "…" + r.sha.slice(-8)) : (r.sha || "—");
+
+  tr.innerHTML = `
+    <td class="center">${r.groupIndex}</td>
+    <td class="wrapcell"><span class="full" title="${escapeHtml(r.name)}">${escapeHtml(r.name)}</span></td>
+    <td class="muted wrapcell"><span class="full" title="${escapeHtml(r.type)}">${escapeHtml(r.type)}</span></td>
+    <td class="right">${formatBytes(r.size)}</td>
+    <td class="muted">${formatDate(r.lastModified)}</td>
+    <td class="mono small sha" title="${escapeHtml(r.sha)}">${escapeHtml(shaShort)}</td>
+    <td class="center"><span class="badge ok">100%</span></td>
+  `;
+  frag.appendChild(tr);
+}
+  els.exactTbody.appendChild(frag);
+}
+
+function renderSimPairs(pairs = (STATE.analysis?.similarPairs || [])){
+  els.simTbody.innerHTML = "";
+  const threshold = STATE.settings.threshold;
+
+
+  // Filtros por extensión (Similitud)
+  const simExts = Array.from(new Set((pairs||[]).flatMap(p=>{
+    const a = STATE.byId.get(p.aId); const b = STATE.byId.get(p.bId);
+    return [getExt(a?.name), getExt(b?.name)];
+  }).filter(Boolean)));
+  renderFilterBar(els.simFilters, simExts, "sim");
+  const q = (TABLE.sim.q || "").trim().toLowerCase();
+  const origIndex = new Map(); (pairs || []).forEach((p,i)=>origIndex.set(p.pairKey, i));
+      let shown = (pairs || []).filter(p => (p.finalPercent ?? -1) >= threshold);
+
+  if(q){
+    shown = shown.filter(p=>{
+      const a = STATE.byId.get(p.aId);
+      const b = STATE.byId.get(p.bId);
+      const hay = `${a?.name||""} ${b?.name||""} ${p.method||""} ${p.label||""} ${(p.finalPercent??"")}`.toLowerCase();
+      return hay.includes(q);
+    });
+  }
+
+
+  // Aplicar filtro por extensión (Similitud)
+  shown = shown.filter(p=>{
+    const a = STATE.byId.get(p.aId);
+    const b = STATE.byId.get(p.bId);
+    return passExtFilter("sim", getExt(a?.name), getExt(b?.name));
+  });
+  
+  { const b = document.getElementById("simCountBadge"); if(b) b.textContent = String(shown.length); }
+  if(!shown.length){
+    els.simTbody.innerHTML = `<tr><td colspan="9" class="muted">No hay pares por encima del umbral (${threshold}%) para el filtro actual.</td></tr>`;
+    return;
+  }
+
+  const field = TABLE.sim.sortField;
+  const dir = TABLE.sim.sortDir === "asc" ? 1 : -1;
+
+  shown.sort((x,y)=>{
+    const ax = STATE.byId.get(x.aId);
+    const bx = STATE.byId.get(x.bId);
+    const ay = STATE.byId.get(y.aId);
+    const by = STATE.byId.get(y.bId);
+
+    const get = (p, a, b) => {
+      if(field === "final") return (p.finalPercent ?? -1);
+      if(field === "rank") return origIndex.get(p.pairKey) ?? 0;
+          if(field === "a") return (a?.name || "");
+      if(field === "b") return (b?.name || "");
+      if(field === "method") return (p.method || "");
+      if(field === "label") return (p.label || "");
+      if(field === "exact") return p.exact ? 1 : 0;
+          if(field === "actions") return 0;
+      return (p.finalPercent ?? -1);
+    };
+
+    const vx = get(x, ax, bx);
+    const vy = get(y, ay, by);
+
+    if(typeof vx === "number" && typeof vy === "number"){
+      return (vx - vy) * dir;
+    }
+    return String(vx).localeCompare(String(vy), "es", { sensitivity:"base" }) * dir;
+  });
+
+  const frag = document.createDocumentFragment();
+  shown.forEach((p, idx)=>{
+    const a = STATE.byId.get(p.aId);
+    const b = STATE.byId.get(p.bId);
+
+    const total = p.totalPercent == null ? "—" : `${p.totalPercent.toFixed(1)}%`;
+    const noc = p.noCoverPercent == null ? "—" : `${p.noCoverPercent.toFixed(1)}%`;
+
+    const exactBadge = p.exact ? `<span class="badge ok">Sí</span>` : `<span class="badge info">No</span>`;
+
+    const tag = p.label || "—";
+    const tagCls = tag === "Copia exacta" ? "ok" : (tag === "Muy similar" ? "ok" : (tag === "Similar" ? "warn" : "info"));
+
+    const canCompare = p.supportsFragments;
+    const btn = canCompare
+      ? `<button class="btn ghost btn-sm" data-action="compare" data-pair="${escapeHtml(p.pairKey)}">Ver</button>`
+      : `<span class="muted tiny">—</span>`;
+
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td>${idx+1}</td>
+      <td class="wrapcell"><span class="full" title="${escapeHtml(a?.name||"")}">${escapeHtml(a?.name||"")}</span></td>
+      <td class="wrapcell"><span class="full" title="${escapeHtml(b?.name||"")}">${escapeHtml(b?.name||"")}</span></td>
+      <td><span class="badge info">${escapeHtml(p.method)}</span></td>
+      <td>${total}</td>
+      <td>${noc}</td>
+      <td><span class="badge ${tagCls}">${escapeHtml(tag)}</span></td>
+      <td>${exactBadge}</td>
+      <td class="actions">${btn}</td>
+    `;
+    frag.appendChild(tr);
+  });
+
+  els.simTbody.appendChild(frag);
+}
+
+function shortName(name, max=38){
+    if(name.length <= max) return name;
+    return name.slice(0, max-1) + "…";
+  }
+
+  function renderKindBadge(kind){
+  if(!kind) return `<span class="badge info">—</span>`;
+  const k = String(kind).toLowerCase();
+  if(k === "pdf") return `<span class="badge info">PDF</span>`;
+  if(k === "docx") return `<span class="badge info">DOCX</span>`;
+  if(k === "image") return `<span class="badge info">Imagen</span>`;
+  if(k === "text") return `<span class="badge info">Texto</span>`;
+  if(k === "media") return `<span class="badge info">Audio/Video</span>`;
+  return `<span class="badge info">${escapeHtml(kind)}</span>`;
+}
+
+function renderStatusBadge(status){
+  const s = status || "—";
+  const low = String(s).toLowerCase();
+  const cls = (low.includes("error") || low.includes("fall")) ? "danger" : (low.includes("listo") || low.includes("ok") ? "ok" : "warn");
+  return `<span class="badge ${cls}">${escapeHtml(s)}</span>`;
+}
+
+
+function renderPdfLowTextBadge(rec){
+  if(rec && rec.kind === "pdf" && rec.extracted?.pdfLowText){
+    return ` <span class="badge warn" title="pdf.js extrajo poco texto; puede ser un PDF escaneado.">Poco texto</span>`;
+  }
+  if(rec && rec.kind === "pdf" && rec.extracted?.useOcr){
+    return ` <span class="badge ok" title="Texto obtenido por OCR (tesseract.js).">OCR</span>`;
+  }
+  return "";
+}
+
+function renderPdfOcrButton(rec){
+  if(!rec || rec.kind !== "pdf") return "";
+  // Mostrar OCR si se detectó poco texto o si ya hay OCR (para re‑ejecutar)
+  const show = !!rec.extracted?.pdfLowText || !!rec.extracted?.useOcr;
+  if(!show) return "";
+  const label = rec.extracted?.useOcr ? "Re‑OCR" : "OCR";
+  return `
+    <button class="btn ghost btn-sm" data-action="ocr" data-id="${rec.id}" type="button" title="OCR bajo demanda (tesseract.js)">
+      ${label}
+    </button>
+    ${rec.extracted?.useOcr ? `
+    <button class="btn ghost btn-sm" data-action="toggleOcr" data-id="${rec.id}" type="button" title="Alternar uso de OCR para comparación y similitud">
+      Usar OCR: ${rec.extracted?.useOcr ? "Sí" : "No"}
+    </button>` : ""}
+  `;
+}
+
+function escapeHtml(s){
+    return String(s || "")
+      .replaceAll("&","&amp;")
+      .replaceAll("<","&lt;")
+      .replaceAll(">","&gt;")
+      .replaceAll('"',"&quot;")
+      .replaceAll("'","&#039;");
+  }
+
+  // -------------------------
+  // File management
+  // -------------------------
+  function addFiles(fileList){
+    const arr = Array.from(fileList || []);
+    if(!arr.length) return;
+
+    const existingKey = new Set(STATE.files.map(r => `${r.name}::${r.size}::${r.lastModified}`));
+
+    for(const f of arr){
+      const key = `${f.name}::${f.size}::${f.lastModified}`;
+      // evita duplicar en UI si se selecciona dos veces el mismo objeto
+      if(existingKey.has(key)) continue;
+      existingKey.add(key);
+
+      const rec = {
+        id: STATE.nextId++,
+        file: f,
+        name: f.name,
+        ext: extOf(f.name),
+        type: f.type || "",
+        size: f.size,
+        lastModified: f.lastModified,
+        kind: kindOf(f),
+        status: "Listo",
+        fingerprints: {},
+        extracted: {},
+        errors: [],
+      };
+      STATE.files.push(rec);
+      STATE.byId.set(rec.id, rec);
+    }
+
+    renderFilesTable();
+    updateCounts();
+    setBusy(false);
+    STATE.analysis = null;
+    STATE.cache = null;
+    updateExportButtons();
+  }
+
+  function removeFile(id){
+    const idx = STATE.files.findIndex(r => r.id === id);
+    if(idx >= 0){
+      STATE.byId.delete(id);
+      STATE.files.splice(idx,1);
+      renderFilesTable();
+      updateCounts();
+      STATE.analysis = null;
+      STATE.cache = null;
+      clearResultsUI();
+      updateExportButtons();
+    }
+  }
+
+  function clearAll(){
+    STATE.files = [];
+    STATE.byId.clear();
+    STATE.analysis = null;
+    renderFilesTable();
+    updateCounts();
+    clearResultsUI();
+    updateExportButtons();
+    setProgress(0, "—", "Sin tareas.");
+  }
+
+  function clearResultsUI(){
+  // Tabla de exactos (ajustada): usa exactTbody; mantener compat si existiera exactResults
+  if(els.exactTbody) els.exactTbody.innerHTML = "";
+  if(els.exactResults) els.exactResults.innerHTML = "";
+
+  // Tabla de similitud
+  if(els.simTbody) els.simTbody.innerHTML = "";
+
+  els.exactStats.textContent = "—";
+  els.simStats.textContent = "—";
+}
+
+  function updateExportButtons(){
+    els.btnExportCSV.disabled = STATE.isBusy || !STATE.analysis;
+    els.btnExportJSON.disabled = STATE.isBusy || !STATE.analysis;
+    els.btnExportPDF.disabled = STATE.isBusy || !STATE.analysis;
+  }
+
+  // -------------------------
+  // Analysis pipeline
+  // -------------------------
+  async function analyze(){
+    if(STATE.isBusy) return;
+    if(!STATE.files.length) return;
+
+    setBusy(true);
+    STATE.cancelRequested = false;
+    clearResultsUI();
+    // Mantener cache para análisis incremental (solo cuando se agregan archivos; si se eliminan, se invalida en remove/clear)
+    const settingsSig = JSON.stringify({ ignoreCover: STATE.settings.ignoreCover, ignoreCoverPdf: STATE.settings.ignoreCoverPdf, ignoreCoverDocx: STATE.settings.ignoreCoverDocx, pdfSkipPages: STATE.settings.pdfSkipPages, docxSkipRatio: STATE.settings.docxSkipRatio, aggressive: STATE.settings.aggressive, shingleK: STATE.settings.shingleK, minhashSize: STATE.settings.minhashSize, maxShingles: STATE.settings.maxShingles, maxCompareShingles: STATE.settings.maxCompareShingles });
+    const prevCache = STATE.cache;
+    const canIncremental = !!(prevCache && prevCache.settingsSig === settingsSig && prevCache.analyzedIds && prevCache.pairKeySet);
+    const newIdSet = new Set(canIncremental ? STATE.files.filter(r => !prevCache.analyzedIds.has(r.id)).map(r => r.id) : STATE.files.map(r => r.id));
+    const incremental = canIncremental && newIdSet.size > 0;
+    STATE.analysis = null;
+    updateExportButtons();
+
+    try{
+
+    const t0 = performance.now();
+    const throwIfCancelled = ()=>{
+      if(STATE.cancelRequested){
+        const err = new Error("Cancelado por el usuario.");
+        err.code = "CANCELLED";
+        throw err;
+      }
+    };
+    setProgress(1, "Inicializando…", "Preparando candidatos.");
+    if(canIncremental && newIdSet.size === 0 && prevCache && prevCache.report){
+      // No hay archivos nuevos; reutilizar resultados previos
+      STATE.analysis = prevCache.report;
+      STATE._lastExactGroups = prevCache.exactGroups || [];
+      renderExactGroups(STATE._lastExactGroups);
+      renderSimPairs(prevCache.similarPairs || []);
+      const totalPairs = (prevCache.similarPairs || []).length;
+      const aboveThr = (prevCache.similarPairs || []).filter(p => (p.finalPercent ?? 0) >= STATE.settings.threshold).length;
+      els.simStats.textContent = `${totalPairs} pares comparados (mostrando ${aboveThr} ≥ ${STATE.settings.threshold}%).`;
+
+    // Resumen reforzado
+    const elig = computeSimilarityEligibilitySummary();
+    const possible = elig.possiblePairs;
+    const cand = simComputeStats?.candidates ?? 0;
+    const compared = simComputeStats?.compared ?? totalPairs;
+    const skipped = elig.skippedTotal;
+    const byType = elig.byType;
+
+    els.simExplain.innerHTML = [
+      `Elegibles: <b>${elig.eligibleTotal}</b> (PDF ${byType.pdf||0}, DOCX ${byType.docx||0}, TXT ${byType.text||0}, XLS/XLSX ${byType.sheet||0}, PPTX ${byType.pptx||0}, IMG ${byType.image||0})`,
+      `Pares posibles: <b>${possible}</b> · Candidatos: <b>${cand}</b> · Evaluados: <b>${compared}</b>`,
+      (skipped>0 ? `Omitidos: <b>${skipped}</b> (sin texto ${elig.skippedNoText}, no soportados ${elig.skippedUnsupported}, no aplican ${elig.skippedNotComparable})` : ``),
+      (possible>0 && cand===0 ? `<span class="pill warn">Sin candidatos</span> Revisa extracción de texto (PDF “poco texto”) u OCR bajo demanda, o ajusta k/firma/muestreo.` : ``),
+      (elig.eligibleTotal<2 ? `<span class="pill warn">Insuficiente</span> Se requieren al menos 2 archivos elegibles para comparar.` : ``),
+    ].filter(Boolean).join("<br>");
+      const exactFilesCount = (STATE._lastExactGroups || []).reduce((acc,g)=>acc + (g.files?.length||0), 0);
+      els.exactStats.innerHTML = `<span class="badge ok">${(STATE._lastExactGroups||[]).length} grupos</span> <span class="badge info">${exactFilesCount} archivos</span>`;
+      setProgress(100, "Listo", "Sin cambios (análisis incremental).");
+      return;
+    }
+
+
+    // Reset per-file transient data (sin borrar cache útil para análisis incremental)
+    for(const r of STATE.files){
+      r.status = "En cola…";
+      r.errors = [];
+      if(!r.fingerprints) r.fingerprints = {};
+      if(!r.extracted) r.extracted = {};
+      if(!r.fpMeta) r.fpMeta = { aggressive: null };
+      // Si cambia normalización agresiva, invalidar fingerprints (no extracción)
+      const pSig = currentParamsSig();
+      if(r.fpMeta.paramsSig && r.fpMeta.paramsSig !== pSig){
+        r.fingerprints = {};
+      }
+      if(r.fpMeta.aggressive !== null && r.fpMeta.aggressive !== STATE.settings.aggressive){
+        r.fingerprints = {};
+      }
+      r.fpMeta.paramsSig = pSig;
+    }
+    renderFilesTable();
+
+    // 1) Duplicados exactos: agrupar por tamaño
+    setProgress(5, "Agrupando por tamaño…", "Pipeline: tamaño → hash.");
+    const bySize = new Map(); // size -> array<FileRec>
+    for(const r of STATE.files){
+      const list = bySize.get(r.size) || [];
+      list.push(r);
+      bySize.set(r.size, list);
+    }
+
+    const sizeGroups = Array.from(bySize.values()).filter(g => g.length >= 2);
+
+    // 2) Hash (solo en grupos de tamaño 2+ por rendimiento)
+    let hashed = 0;
+    const totalToHash = sizeGroups.reduce((acc,g)=>acc + g.filter(r=>!r.sha256).length, 0);
+
+    async function hashRec(r){
+      if(r.sha256) return r.sha256;
+      setFileStatus(r.id, "Hasheando (SHA‑256)...");
+      const h = await HASH.sha256(r.file);
+      r.sha256 = h;
+      setFileStatus(r.id, "Hash listo");
+      return h;
+    }
+
+    for(const group of sizeGroups){
+      // concurrencia controlada (2)
+      const queue = group.slice();
+      const concurrency = 2;
+      const workers = [];
+      for(let c=0;c<concurrency;c++){
+        workers.push((async ()=>{
+          while(queue.length){
+            const r = queue.shift();
+            if(!r) break;
+            try{
+              await hashRec(r);
+              r.fpMeta.aggressive = STATE.settings.aggressive;
+      }catch(e){
+              r.errors.push("Hash error: " + (e.message || String(e)));
+              setFileStatus(r.id, "Error en hash");
+            }finally{
+              hashed++;
+              const pct = 5 + Math.floor(25 * (hashed / Math.max(1,totalToHash)));
+              setProgress(pct, "Calculando hashes…", `${hashed}/${totalToHash} archivos hasheados en grupos de tamaño duplicado.`);
+            }
+            await yieldUI();
+          }
+        })());
+      }
+      await Promise.all(workers);
+    }
+
+    // 3) Construir grupos exactos: (size, sha256)
+    const exactMap = new Map(); // key -> {size, sha, files[]}
+    for(const group of sizeGroups){
+      for(const r of group){
+        if(!r.sha256) continue;
+        const key = `${r.size}::${r.sha256}`;
+        const g = exactMap.get(key) || { size: r.size, sha256: r.sha256, files: [] };
+        g.files.push(r.id);
+        exactMap.set(key, g);
+      }
+    }
+    const exactGroups = Array.from(exactMap.values()).filter(g => g.files.length >= 2);
+    exactGroups.sort((a,b)=>b.files.length - a.files.length);
+
+    STATE._lastExactGroups = exactGroups;
+
+    renderExactGroups(exactGroups);
+    const exactFilesCount = exactGroups.reduce((acc,g)=>acc + (g.files?.length||0), 0);
+    els.exactStats.innerHTML = `<span class="badge ok">${exactGroups.length} grupos</span> <span class="badge info">${exactFilesCount} archivos</span>`;
+
+    // 4) Extracción + fingerprints por tipo
+    setProgress(32, "Extrayendo contenido…", "Texto/PDF/DOCX/Imágenes/AV.");
+    const extractList = STATE.files.slice();
+    const totalExtract = extractList.length;
+    let doneExtract = 0;
+
+    const extractConcurrency = 3;
+
+    async function processOne(r){
+      try{
+        throwIfCancelled();
+        // Cache: si ya hay fingerprints válidos para la configuración actual, no reprocesar
+        const haveText = !!(r.fingerprints?.text && r.fingerprints?.textNoCover);
+        const haveImg = !!(r.fingerprints?.image);
+        const haveAV  = !!(r.fingerprints?.av);
+        const haveBin = !!(r.fingerprints?.bin && r.fingerprints.bin.h1);
+        const cacheOk = (r.fpMeta?.paramsSig === currentParamsSig()) && (r.fpMeta?.aggressive === STATE.settings.aggressive) && (
+          (["text","pdf","docx","sheet","pptx"].includes(r.kind) && haveText) ||
+          (r.kind === "image" && haveImg) ||
+          ((r.kind === "audio" || r.kind === "video") && haveAV && haveBin) ||
+          (["other","doc","ppt"].includes(r.kind) && haveBin)
+        );
+        if(cacheOk){
+          setFileStatus(r.id, "Listo (cache)");
+          return;
+        }
+        setFileStatus(r.id, "Clasificando…");
+        if(r.kind === "text"){
+          setFileStatus(r.id, "Leyendo texto…");
+          const raw = await r.file.text();
+          const norm = normalizeText(raw, STATE.settings.aggressive);
+          const tokens = tokenizeWords(norm);
+          const shingles = buildShingles(tokens, STATE.settings.shingleK, STATE.settings.maxShingles);
+          const sig = minhashSignature(shingles);
+
+          r.extracted.text = raw;
+          r.fingerprints.text = { sig, shingles, tokenCount: tokens.length, charCount: raw.length };
+          setFileStatus(r.id, "Texto listo");
+        }else if(r.kind === "pdf"){
+          setFileStatus(r.id, "Extrayendo PDF…");
+          const { full, noCover, pages, lowText } = await extractPdfText(r);
+          r.extracted.pdfLowText = !!lowText;
+          r.extracted.text = full;
+          r.extracted.textNoCover = noCover;
+          r.extracted.pdfPages = pages;
+
+          const normFull = normalizeText(full, STATE.settings.aggressive);
+          const tokFull = tokenizeWords(normFull);
+          const shFull = buildShingles(tokFull, STATE.settings.shingleK, STATE.settings.maxShingles);
+          const sigFull = minhashSignature(shFull);
+          r.fingerprints.text = { sig: sigFull, shingles: shFull, tokenCount: tokFull.length, charCount: full.length };
+
+          const normNC = normalizeText(noCover, STATE.settings.aggressive);
+          const tokNC = tokenizeWords(normNC);
+          const shNC = buildShingles(tokNC, STATE.settings.shingleK, STATE.settings.maxShingles);
+          const sigNC = minhashSignature(shNC);
+          r.fingerprints.textNoCover = { sig: sigNC, shingles: shNC, tokenCount: tokNC.length, charCount: noCover.length };
+
+          setFileStatus(r.id, "PDF listo");
+        }else if(r.kind === "docx"){
+          setFileStatus(r.id, "Extrayendo DOCX…");
+          const { full, noCover } = await extractDocxText(r);
+
+          r.extracted.text = full;
+          r.extracted.textNoCover = noCover;
+
+          const normFull = normalizeText(full, STATE.settings.aggressive);
+          const tokFull = tokenizeWords(normFull);
+          const shFull = buildShingles(tokFull, STATE.settings.shingleK, STATE.settings.maxShingles);
+          const sigFull = minhashSignature(shFull);
+          r.fingerprints.text = { sig: sigFull, shingles: shFull, tokenCount: tokFull.length, charCount: full.length };
+
+          const normNC = normalizeText(noCover, STATE.settings.aggressive);
+          const tokNC = tokenizeWords(normNC);
+          const shNC = buildShingles(tokNC, STATE.settings.shingleK, STATE.settings.maxShingles);
+          const sigNC = minhashSignature(shNC);
+          r.fingerprints.textNoCover = { sig: sigNC, shingles: shNC, tokenCount: tokNC.length, charCount: noCover.length };
+
+          setFileStatus(r.id, "DOCX listo");
+        }else if(r.kind === "sheet"){
+          setFileStatus(r.id, "Extrayendo XLSX/XLS…");
+          const { full, noCover } = await extractSheetText(r);
+
+          r.extracted.text = full;
+          r.extracted.textNoCover = noCover;
+
+          const normFull = normalizeText(full, STATE.settings.aggressive);
+          const tokFull = tokenizeWords(normFull);
+          const shFull = buildShingles(tokFull, STATE.settings.shingleK, STATE.settings.maxShingles);
+          const sigFull = minhashSignature(shFull);
+          r.fingerprints.text = { sig: sigFull, shingles: shFull, tokenCount: tokFull.length, charCount: full.length };
+
+          // noCover = full
+          r.fingerprints.textNoCover = r.fingerprints.text;
+
+          setFileStatus(r.id, "Hoja lista");
+        }else if(r.kind === "pptx"){
+          setFileStatus(r.id, "Extrayendo PPTX…");
+          const { full, noCover } = await extractPptxText(r);
+
+          r.extracted.text = full;
+          r.extracted.textNoCover = noCover;
+
+          const normFull = normalizeText(full, STATE.settings.aggressive);
+          const tokFull = tokenizeWords(normFull);
+          const shFull = buildShingles(tokFull, STATE.settings.shingleK, STATE.settings.maxShingles);
+          const sigFull = minhashSignature(shFull);
+          r.fingerprints.text = { sig: sigFull, shingles: shFull, tokenCount: tokFull.length, charCount: full.length };
+
+          r.fingerprints.textNoCover = r.fingerprints.text;
+
+          setFileStatus(r.id, "Presentación lista");
+        }else if(r.kind === "doc" || r.kind === "ppt"){
+          setFileStatus(r.id, "Formato legado: huella binaria…");
+          await ensureBinaryFingerprint(r);
+          setFileStatus(r.id, "Legado listo (comparación binaria)");
+        }else if(r.kind === "other"){
+          setFileStatus(r.id, "Huella binaria…");
+          await ensureBinaryFingerprint(r);
+          setFileStatus(r.id, "Binario listo");
+        }else if(r.kind === "image"){
+          setFileStatus(r.id, "Leyendo imagen…");
+          const img = await loadImageFromFile(r.file);
+          const dh = computeDHash(img);
+          r.fingerprints.image = { dhash: dh, width: img.naturalWidth || img.width, height: img.naturalHeight || img.height };
+          setFileStatus(r.id, "Imagen lista");
+        }else if(r.kind === "audio" || r.kind === "video"){
+          setFileStatus(r.id, "Leyendo metadatos…");
+          const dur = await getMediaDuration(r);
+          r.fingerprints.av = { duration: dur };
+          setFileStatus(r.id, "Huella binaria…");
+          await ensureBinaryFingerprint(r);
+          setFileStatus(r.id, "Audio/Video listo");
+        }else{
+          setFileStatus(r.id, "Sin extracción");
+        }
+      }catch(e){
+        r.errors.push(String(e && e.message ? e.message : e));
+        setFileStatus(r.id, "Error");
+      }
+    }
+
+    const q = extractList.slice();
+    const runners = [];
+    for(let i=0;i<extractConcurrency;i++){
+      runners.push((async ()=>{
+        while(q.length){
+          const r = q.shift();
+          if(!r) break;
+          await processOne(r);
+          doneExtract++;
+          const pct = 32 + Math.floor(28 * (doneExtract / Math.max(1,totalExtract)));
+          setProgress(pct, "Extrayendo contenido…", `${doneExtract}/${totalExtract} archivos procesados.`);
+          await yieldUI();
+        }
+      })());
+    }
+    await Promise.all(runners);
+
+    // 5) Selección de candidatos y comparación
+    setProgress(62, "Generando candidatos…", "Evitando todos‑contra‑todos.");
+    throwIfCancelled();
+    const simRes = await computeSimilarities(exactGroups, incremental ? {
+      restrictToNewIds: newIdSet,
+      prevPairs: prevCache.similarPairs || [],
+      prevPairKeySet: prevCache.pairKeySet || new Set(),
+    } : null);
+    const simPairs = simRes.pairs;
+    const simComputeStats = simRes.stats;
+
+    // 6) Final report
+    const report = buildReport(exactGroups, simPairs);
+    STATE.analysis = report;
+
+    // Actualizar cache para análisis incremental
+    STATE.cache = {
+      settingsSig,
+      analyzedIds: new Set(STATE.files.map(r=>r.id)),
+      pairKeySet: new Set(simPairs.map(p=>p.pairKey)),
+      exactGroups: exactGroups,
+      similarPairs: simPairs,
+      report: report,
+    };
+
+    // UI
+    const totalPairs = simPairs.length;
+    const aboveThr = simPairs.filter(p => (p.finalPercent ?? 0) >= STATE.settings.threshold).length;
+
+    els.simStats.textContent = `${totalPairs} pares comparados (mostrando ${aboveThr} ≥ ${STATE.settings.threshold}%).`;
+
+    // Resumen reforzado
+    const elig = computeSimilarityEligibilitySummary();
+    const possible = elig.possiblePairs;
+    const cand = simComputeStats?.candidates ?? 0;
+    const compared = simComputeStats?.compared ?? totalPairs;
+    const skipped = elig.skippedTotal;
+    const byType = elig.byType;
+    els.simExplain.innerHTML = [
+      `Elegibles: <b>${elig.eligibleTotal}</b> (PDF ${byType.pdf||0}, DOCX ${byType.docx||0}, TXT ${byType.text||0}, XLS/XLSX ${byType.sheet||0}, PPTX ${byType.pptx||0}, IMG ${byType.image||0})`,
+      `Pares posibles: <b>${possible}</b> · Candidatos: <b>${cand}</b> · Evaluados: <b>${compared}</b>`,
+      (skipped>0 ? `Omitidos: <b>${skipped}</b> (sin texto ${elig.skippedNoText}, no soportados ${elig.skippedUnsupported})` : ``),
+      (possible>0 && cand===0 ? `<span class="pill warn">Sin candidatos</span> Revisa extracción de texto/OCR o ajusta parámetros.` : ``)
+    ].filter(Boolean).join("<br>");
+    renderSimPairs(simPairs);
+
+    setProgress(100, "Listo", `Tiempo: ${((performance.now()-t0)/1000).toFixed(2)}s · Exactos: ${exactGroups.length} grupos · Pares: ${simPairs.length}.`);
+    }
+    catch(e){
+      const cancelled = (e && e.code === "CANCELLED") || STATE.cancelRequested;
+      if(cancelled){
+        setProgress(0, "Cancelado", "El análisis fue detenido por el usuario.");
+      }else{
+        console.error(e);
+        setProgress(0, "Error", (e && e.message) ? e.message : String(e));
+      }
+    }
+    finally{
+      setBusy(false);
+      updateExportButtons();
+    }
+  }
+
+  function expandExactGroupsForUI(){
+    return STATE._lastExactGroups || [];
+  }
+
+  function buildReport(exactGroups, simPairs){
+    const filesOut = STATE.files.map(r => ({
+      id: r.id,
+      name: r.name,
+      type: r.type || null,
+      ext: r.ext || null,
+      size: r.size,
+      lastModified: r.lastModified,
+      kind: r.kind,
+      sha256: r.sha256 || null,
+      fingerprints: summarizeFingerprints(r),
+      errors: r.errors && r.errors.length ? r.errors.slice() : [],
+    }));
+
+    return {
+      meta: {
+        generatedAt: new Date().toISOString(),
+        threshold: STATE.settings.threshold,
+        ignoreCover: STATE.settings.ignoreCover,
+        ignoreCoverPdf: STATE.settings.ignoreCoverPdf,
+        ignoreCoverDocx: STATE.settings.ignoreCoverDocx,
+        pdfSkipPages: STATE.settings.pdfSkipPages,
+        docxSkipRatio: STATE.settings.docxSkipRatio,
+        shingleK: STATE.settings.shingleK,
+        minhashSize: STATE.settings.minhashSize,
+        maxShingles: STATE.settings.maxShingles,
+        maxCompareShingles: STATE.settings.maxCompareShingles,
+        aggressive: STATE.settings.aggressive,
+        workerMode: HASH.mode,
+        app: "SENA 360 – Detector de Duplicados y Similitud",
+      },
+      files: filesOut,
+      exactGroups: exactGroups.map((g, i) => ({
+        groupId: i+1,
+        size: g.size,
+        sha256: g.sha256,
+        fileIds: g.files.slice(),
+      })),
+      similarPairs: simPairs.map(p => ({ ...p })),
+    };
+  }
+
+  function summarizeFingerprints(r){
+    const out = {};
+    if(r.fingerprints?.text){
+      out.text = { tokenCount: r.fingerprints.text.tokenCount, shingleCount: r.fingerprints.text.shingles?.length || 0 };
+    }
+    if(r.fingerprints?.textNoCover){
+      out.textNoCover = { tokenCount: r.fingerprints.textNoCover.tokenCount, shingleCount: r.fingerprints.textNoCover.shingles?.length || 0 };
+    }
+    if(r.fingerprints?.image){
+      out.image = { width: r.fingerprints.image.width, height: r.fingerprints.image.height };
+    }
+    if(r.fingerprints?.av){
+      out.av = { duration: r.fingerprints.av.duration };
+    }
+    return out;
+  }
+
+  async function computeSimilarities(exactGroups, opts=null){
+    // Candidate generation strategy:
+    //  - Text/PDF/DOCX: LSH on MinHash signatures (full or no-cover depending on toggle)
+    //  - Image: bucket by (width,height) and dhash prefix
+    //  - Audio/Video/Other/Legacy: comparación heurística por huella binaria (fragmentos) + metadatos
+    const pairs = [];
+    const restrict = opts && opts.restrictToNewIds ? opts.restrictToNewIds : null;
+    const seen = new Set((restrict && opts && opts.prevPairKeySet) ? Array.from(opts.prevPairKeySet) : []);
+    const outAll = (restrict && opts && opts.prevPairs) ? opts.prevPairs.slice() : [];
+    const prevLen = outAll.length;
+    const stats = { candidates: 0, compared: 0, added: 0, total: 0 };
+
+
+    // Build quick exact lookup (sha-> set of file ids)
+    const exactBySha = new Map();
+    for(const g of exactGroups){
+      exactBySha.set(g.sha256, new Set(g.files));
+    }
+
+    // --- Text/PDF/DOCX candidates via LSH
+    const textLike = STATE.files.filter(r => ["text","pdf","docx","sheet","pptx"].includes(r.kind) && (r.fingerprints.text || r.fingerprints.textNoCover));
+    const lshBuckets = new Map(); // key -> [fileId]
+    const bandSize = 8;
+    const numBands = 8;
+
+    for(const r of textLike){
+      const fp = (shouldUseNoCover(r) && r.fingerprints.textNoCover) ? r.fingerprints.textNoCover : r.fingerprints.text;
+      if(!fp || !fp.sig || fp.sig.length < bandSize*numBands) continue;
+
+      // prefilter by size: ignore trivial texts
+      const charCount = fp.charCount || 0;
+      if(charCount < 30) continue;
+
+      for(let b=0;b<numBands;b++){
+        const start = b*bandSize;
+        const slice = fp.sig.slice(start, start+bandSize);
+        const key = `T:${r.kind}:${b}:${slice.join("-")}`;
+        const arr = lshBuckets.get(key) || [];
+        arr.push(r.id);
+        lshBuckets.set(key, arr);
+      }
+    }
+
+    for(const [key, ids] of lshBuckets){
+      if(ids.length < 2) continue;
+      // generate pairs inside bucket
+      for(let i=0;i<ids.length;i++){
+        for(let j=i+1;j<ids.length;j++){
+          const aId = ids[i], bId = ids[j];
+          const pk = aId < bId ? `${aId}|${bId}` : `${bId}|${aId}`;
+          if(restrict && !(restrict.has(aId) || restrict.has(bId))) continue;
+           if(seen.has(pk)) continue;
+
+          const a = STATE.byId.get(aId);
+          const b = STATE.byId.get(bId);
+          if(!a || !b) continue;
+
+          // extra prefilters
+          if(a.kind !== b.kind) continue; // only same kind for similarity
+          const sizeRatio = Math.max(a.size,b.size) / Math.max(1,Math.min(a.size,b.size));
+          if(sizeRatio > 1.6) continue;
+
+          seen.add(pk);
+          pairs.push({ aId, bId, method: (a.kind === "text" ? "texto" : a.kind), pairKey: pk });
+        }
+      }
+    }
+
+    // --- Image candidates
+    const images = STATE.files.filter(r => r.kind === "image" && r.fingerprints.image);
+    const imgBuckets = new Map(); // key -> [fileId]
+    for(const r of images){
+      const { width, height, dhash } = r.fingerprints.image;
+      const prefix = Number((dhash >> 48n) & 0xFFFFn); // top 16 bits
+      const key = `I:${width}x${height}:${prefix}`;
+      const arr = imgBuckets.get(key) || [];
+      arr.push(r.id);
+      imgBuckets.set(key, arr);
+    }
+
+    for(const [key, ids] of imgBuckets){
+      if(ids.length < 2) continue;
+      const limit = Math.min(ids.length, 80); // hard cap per bucket
+      for(let i=0;i<limit;i++){
+        for(let j=i+1;j<limit;j++){
+          const aId = ids[i], bId = ids[j];
+          const pk = aId < bId ? `${aId}|${bId}` : `${bId}|${aId}`;
+          if(restrict && !(restrict.has(aId) || restrict.has(bId))) continue;
+           if(seen.has(pk)) continue;
+
+          seen.add(pk);
+          pairs.push({ aId, bId, method: "image", pairKey: pk });
+        }
+      }
+    }
+
+    // --- Binary/Media candidates (huella por fragmentos + metadatos)
+    const binKinds = new Set(["audio","video","other","doc","ppt"]);
+    const binFiles = STATE.files.filter(r => binKinds.has(r.kind) && r.fingerprints?.bin?.h1);
+
+    const binBuckets = new Map(); // key -> [fileId]
+    for(const r of binFiles){
+      const band = Math.max(0, Math.round(Math.log2((r.size||1)+1))); // bucket por orden de magnitud
+      const key = `B:${r.kind}:${r.ext||extOf(r.name)}:${band}`;
+      const arr = binBuckets.get(key) || [];
+      arr.push(r.id);
+      binBuckets.set(key, arr);
+    }
+
+    for(const [key, ids] of binBuckets){
+      if(ids.length < 2) continue;
+      const limit = Math.min(ids.length, 70); // cap por bucket
+      for(let i=0;i<limit;i++){
+        for(let j=i+1;j<limit;j++){
+          const aId = ids[i], bId = ids[j];
+          const pk = aId < bId ? `${aId}|${bId}` : `${bId}|${aId}`;
+          if(restrict && !(restrict.has(aId) || restrict.has(bId))) continue;
+          if(seen.has(pk)) continue;
+
+          const a = STATE.byId.get(aId);
+          const b = STATE.byId.get(bId);
+          if(!a || !b) continue;
+
+          // Prefiltro de tamaño (binario tolera más)
+          const sizeRatio = Math.max(a.size,b.size) / Math.max(1,Math.min(a.size,b.size));
+          if(sizeRatio > 2.0) continue;
+
+          seen.add(pk);
+          pairs.push({ aId, bId, method: "bin", pairKey: pk });
+        }
+      }
+    }
+
+
+    // Now compute similarity for candidate pairs
+    stats.candidates = pairs.length;
+    setProgress(68, "Comparando candidatos…", `${pairs.length} candidatos.`);
+
+    let done = 0;
+    for(const p of pairs){
+      if(STATE.cancelRequested){
+        const err = new Error("Cancelado por el usuario.");
+        err.code = "CANCELLED";
+        throw err;
+      }
+      done++;
+      const a = STATE.byId.get(p.aId);
+      const b = STATE.byId.get(p.bId);
+      if(!a || !b) continue;
+
+      const res = await comparePair(a, b, exactBySha);
+      if(res){
+        outAll.push(res);
+      }
+
+      if(done % 10 === 0){
+        const pct = 68 + Math.floor(32 * (done / Math.max(1,pairs.length)));
+        setProgress(pct, "Comparando…", `${done}/${pairs.length} pares.`);
+        await yieldUI();
+      }
+    }
+
+    // sort desc
+    outAll.sort((x,y)=>(y.finalPercent||0)-(x.finalPercent||0));
+    stats.compared = done;
+    stats.total = outAll.length;
+    stats.added = Math.max(0, outAll.length - prevLen);
+
+    return { pairs: outAll, stats };
+  }
+
+  async function comparePair(a, b, exactBySha){
+    // On-demand sha256 for exact indicator when sizes equal (or very close)
+    // We compute sha for both only if:
+    //  - same size OR candidate says so; and if not already
+    const maybeExact = (a.size === b.size);
+
+    let exact = false;
+    if(maybeExact){
+      try{
+        if(!a.sha256) a.sha256 = await HASH.sha256(a.file);
+        if(!b.sha256) b.sha256 = await HASH.sha256(b.file);
+        exact = (a.sha256 && b.sha256 && a.sha256 === b.sha256);
+      }catch(_e){
+        exact = false;
+      }
+    }
+
+    // Similarity by type
+    if(["text","pdf","docx","sheet","pptx"].includes(a.kind) && a.kind === b.kind){
+      const fpAFull = a.fingerprints.text;
+      const fpBFull = b.fingerprints.text;
+      if(!fpAFull || !fpBFull) return null;
+
+      const fpANC = a.fingerprints.textNoCover || null;
+      const fpBNC = b.fingerprints.textNoCover || null;
+
+      // total similarity (estimate -> exact if feasible)
+      if((fpAFull.shingles?.length || 0) === 0 || (fpBFull.shingles?.length || 0) === 0){
+        return {
+          pairKey: `${Math.min(a.id,b.id)}|${Math.max(a.id,b.id)}`,
+          aId: a.id,
+          bId: b.id,
+          method: (a.kind === "text" ? "texto" : a.kind),
+          totalPercent: null,
+          noCoverPercent: null,
+          finalPercent: null,
+          label: "No soportado para similitud (solo exacto)",
+          exact,
+          supportsFragments: false,
+        };
+      }
+
+      let jEst = estJaccardFromSig(fpAFull.sig, fpBFull.sig);
+      let jExact = null;
+      if(fpAFull.shingles && fpBFull.shingles){
+        // compute exact only when sets are not too big
+        const max = Math.max(fpAFull.shingles.length, fpBFull.shingles.length);
+        if(max <= 25000){
+          jExact = exactJaccardSorted(fpAFull.shingles, fpBFull.shingles);
+        }
+      }
+      const total = (jExact != null ? jExact : jEst);
+      const totalPercent = total == null ? null : total * 100;
+
+      // no-cover similarity
+      let ncPercent = null;
+      if(fpANC && fpBNC && (fpANC.shingles?.length||0) > 0 && (fpBNC.shingles?.length||0) > 0){
+        let ncEst = estJaccardFromSig(fpANC.sig, fpBNC.sig);
+        let ncExact = null;
+        const maxNc = Math.max(fpANC.shingles.length, fpBNC.shingles.length);
+        if(maxNc <= 25000){
+          ncExact = exactJaccardSorted(fpANC.shingles, fpBNC.shingles);
+        }
+        const nc = (ncExact != null ? ncExact : ncEst);
+        ncPercent = nc == null ? null : nc * 100;
+      }
+
+      // final percent uses noCover if toggle and it's higher
+      let finalPercent = totalPercent;
+      if(STATE.settings.ignoreCover && shouldUseNoCover(a) && shouldUseNoCover(b) && ncPercent != null && (finalPercent == null || ncPercent > finalPercent)){
+        finalPercent = ncPercent;
+      }
+
+      const label = exact ? "Copia exacta" : labelFor(finalPercent);
+
+      return {
+        pairKey: `${Math.min(a.id,b.id)}|${Math.max(a.id,b.id)}`,
+        aId: a.id,
+        bId: b.id,
+        method: (a.kind === "text" ? "texto" : a.kind),
+        totalPercent,
+        noCoverPercent: (a.kind === "text") ? null : ncPercent,
+        finalPercent,
+        label,
+        exact,
+        supportsFragments: true,
+      };
+    }
+
+    if(a.kind === "image" && b.kind === "image" && a.fingerprints.image && b.fingerprints.image){
+      const sim = dhashSimilarity(a.fingerprints.image.dhash, b.fingerprints.image.dhash);
+      const label = exact ? "Copia exacta" : labelFor(sim);
+
+      return {
+        pairKey: `${Math.min(a.id,b.id)}|${Math.max(a.id,b.id)}`,
+        aId: a.id,
+        bId: b.id,
+        method: "imagen",
+        totalPercent: sim,
+        noCoverPercent: null,
+        finalPercent: sim,
+        label,
+        exact,
+        supportsFragments: true,
+      };
+    }
+
+    // Huella binaria / media (fragmentos + metadatos)
+    if(["audio","video","other","doc","ppt"].includes(a.kind) && a.kind === b.kind && a.fingerprints?.bin && b.fingerprints?.bin){
+      const sim = binaryHeuristicSimilarity(a, b);
+      if(sim == null) return null;
+      const label = exact ? "Copia exacta" : labelFor(sim);
+      return {
+        pairKey: `${Math.min(a.id,b.id)}|${Math.max(a.id,b.id)}`,
+        aId: a.id,
+        bId: b.id,
+        method: (a.kind === "audio" ? "audio" : a.kind === "video" ? "video" : "binario"),
+        totalPercent: sim,
+        noCoverPercent: null,
+        finalPercent: sim,
+        label,
+        exact,
+        supportsFragments: true,
+      };
+    }
+
+
+    // Not supported for similarity
+    return null;
+  }
+
+  // -------------------------
+  // Fragments modal (on-demand)
+  // -------------------------
+  // -------------------------
+// Comparador lado a lado (texto) con scroll sincronizado
+// -------------------------
+
+async function showCompare(pairKey){
+  const [aIdStr, bIdStr] = pairKey.split("|");
+  const a = STATE.byId.get(Number(aIdStr));
+  const b = STATE.byId.get(Number(bIdStr));
+  if(!a || !b) return;
+
+  const kindLabel = (a.kind === "pdf" || b.kind === "pdf") ? "PDF" : ((a.kind === "docx" || b.kind === "docx") ? "DOCX" : "Texto");
+
+  els.modalOverlay.classList.add("show");
+  els.modalOverlay.setAttribute("aria-hidden", "false");
+  els.modalTitle.textContent = `Comparador (${kindLabel})`;
+  els.modalSub.textContent = `${a.name}  ↔  ${b.name}`;
+  els.modalBody.innerHTML = `<div class="muted tiny">Preparando comparación…</div>`;
+
+  try{
+    // Derivar el comparador según tipo
+    if(a.kind === "image" && b.kind === "image"){
+      await renderImageComparator(a, b);
+      return;
+    }
+    if(["audio","video","other","doc","ppt"].includes(a.kind) && a.kind === b.kind){
+      await renderBinaryComparator(a, b);
+      return;
+    }
+
+    const aggressive = STATE.settings.aggressive;
+
+    const pickText = (rec)=>{
+      if(rec.kind === "pdf" && rec.extracted?.useOcr && rec.extracted?.textOcr){
+        return rec.extracted.textOcr;
+      }
+      const useNC = shouldUseNoCover(rec);
+      return (useNC && rec.extracted?.textNoCover) ? rec.extracted.textNoCover : rec.extracted?.text;
+    };
+
+    const aText = String(pickText(a) || "");
+    const bText = String(pickText(b) || "");
+
+    // Coincidencias (k‑shingles) para copiar
+    const aNorm = normalizeText(aText, aggressive);
+    const bNorm = normalizeText(bText, aggressive);
+    const aTok = tokenizeWords(aNorm);
+    const bTok = tokenizeWords(bNorm);
+
+    const k = Number(STATE.settings.shingleK || 5);
+    const aSh = buildShingleStrings(aTok, k, Number(STATE.settings.maxCompareShingles || 50000));
+    const bSh = buildShingleStrings(bTok, k, Number(STATE.settings.maxCompareShingles || 50000));
+
+    const setB = new Set(bSh);
+    const common = [];
+    for(const s of aSh){
+      if(setB.has(s)){
+        common.push(s);
+        if(common.length >= 120) break;
+      }
+    }
+
+    // Diff por palabras (con fallback a resaltado por tokens)
+    const diff = wordDiffSideBySide(aText, bText, { aggressive, maxTokens: 4500 });
+
+    const copyCommon = async ()=>{
+      const payload = common.length ? common.join("\n") : "";
+      try{
+        await navigator.clipboard.writeText(payload);
+        toast(common.length ? `Copiado: ${common.length} coincidencias` : "No hay coincidencias para copiar.");
+      }catch(_e){
+        // fallback
+        const ta = document.createElement("textarea");
+        ta.value = payload;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        ta.remove();
+        toast(common.length ? `Copiado: ${common.length} coincidencias` : "No hay coincidencias para copiar.");
+      }
+    };
+
+    const copyA = async ()=>{
+      try{ await navigator.clipboard.writeText(aText); toast("Texto A copiado."); }catch(_e){}
+    };
+    const copyB = async ()=>{
+      try{ await navigator.clipboard.writeText(bText); toast("Texto B copiado."); }catch(_e){}
+    };
+
+    els.modalBody.innerHTML = `
+      <div class="diff-toolbar">
+        <button class="btn secondary" id="btnCopyCommon" type="button">Copiar coincidencias</button>
+        <button class="btn ghost" id="btnCopyA" type="button">Copiar A</button>
+        <button class="btn ghost" id="btnCopyB" type="button">Copiar B</button>
+        <div class="diff-legend" style="margin-left:auto;">
+          <span class="diff-chip"><span class="diff-swatch" style="background:rgba(239,68,68,.20)"></span>Eliminado (A)</span>
+          <span class="diff-chip"><span class="diff-swatch" style="background:rgba(16,185,129,.22)"></span>Agregado (B)</span>
+          <span class="diff-chip"><span class="diff-swatch" style="background:rgba(234,179,8,.22)"></span>Similar</span>
+        </div>
+      </div>
+
+      <div class="muted tiny" style="margin-bottom:10px;">
+        Diff por palabras (espacios normalizados). Coincidencias para copiar basadas en k‑shingles (k=${k}).
+      </div>
+
+      <div class="compare-grid">
+        <div class="compare-pane">
+          <div class="compare-pane-head">
+            <div>
+              <div class="compare-pane-title">${escapeHtml(a.name)}</div>
+              <div class="compare-pane-sub">${escapeHtml(a.type || "—")} · ${formatBytes(a.size)}</div>
+            </div>
+            <span class="badge info">A</span>
+          </div>
+          <div class="compare-scroll" id="cmpA"><pre>${diff.htmlA}</pre></div>
+        </div>
+
+        <div class="compare-pane">
+          <div class="compare-pane-head">
+            <div>
+              <div class="compare-pane-title">${escapeHtml(b.name)}</div>
+              <div class="compare-pane-sub">${escapeHtml(b.type || "—")} · ${formatBytes(b.size)}</div>
+            </div>
+            <span class="badge info">B</span>
+          </div>
+          <div class="compare-scroll" id="cmpB"><pre>${diff.htmlB}</pre></div>
+        </div>
+      </div>
+
+      <div style="margin-top:12px;">
+        <div class="muted tiny" style="font-weight:900; margin-bottom:6px;">Coincidencias (para copia rápida)</div>
+        ${common.length ? `<div class="card" style="padding:10px 12px;"><pre style="margin:0; white-space:pre-wrap; word-break:break-word; font-size:12.3px; line-height:1.35;">${escapeHtml(common.join("\n"))}</pre></div>` : `<div class="muted tiny">—</div>`}
+      </div>
+    `;
+
+    // wire buttons
+    const bc = document.getElementById("btnCopyCommon");
+    const bca = document.getElementById("btnCopyA");
+    const bcb = document.getElementById("btnCopyB");
+    if(bc) bc.addEventListener("click", copyCommon);
+    if(bca) bca.addEventListener("click", copyA);
+    if(bcb) bcb.addEventListener("click", copyB);
+
+    // scroll sync
+    const elA = document.getElementById("cmpA");
+    const elB = document.getElementById("cmpB");
+    if(elA && elB){
+      let lock = false;
+      elA.addEventListener("scroll", ()=>{
+        if(lock) return;
+        lock = true;
+        const ratio = elA.scrollTop / Math.max(1, (elA.scrollHeight - elA.clientHeight));
+        elB.scrollTop = ratio * (elB.scrollHeight - elB.clientHeight);
+        lock = false;
+      });
+      elB.addEventListener("scroll", ()=>{
+        if(lock) return;
+        lock = true;
+        const ratio = elB.scrollTop / Math.max(1, (elB.scrollHeight - elB.clientHeight));
+        elA.scrollTop = ratio * (elA.scrollHeight - elA.clientHeight);
+        lock = false;
+      });
+    }
+  }catch(e){
+    els.modalBody.innerHTML = `<div class="muted tiny">Error: ${escapeHtml(e.message || String(e))}</div>`;
+  }
+}
+
+function wordDiffSideBySide(aText, bText, opts={}){
+  const aggressive = !!opts.aggressive;
+  const maxTokens = Number(opts.maxTokens || 4500);
+
+  const aNorm = normalizeText(String(aText||""), aggressive).replace(/\s+/g," ").trim();
+  const bNorm = normalizeText(String(bText||""), aggressive).replace(/\s+/g," ").trim();
+
+  const aTok = aNorm ? aNorm.split(" ") : [];
+  const bTok = bNorm ? bNorm.split(" ") : [];
+
+  // If content is huge, fallback to "similar" highlights only.
+  if(aTok.length + bTok.length > maxTokens){
+    const setB = new Set(bTok.filter(t=>t.length>=4));
+    const commonTokens = new Set(aTok.filter(t=>t.length>=4 && setB.has(t)));
+    const htmlA = highlightByTokens(String(aText||""), commonTokens, aggressive, "diff-sim");
+    const htmlB = highlightByTokens(String(bText||""), commonTokens, aggressive, "diff-sim");
+    return { htmlA, htmlB, mode:"fallback-common" };
+  }
+
+  const ops = myersDiffTokens(aTok, bTok);
+
+  const outA = [];
+  const outB = [];
+  for(const op of ops){
+    if(op.type === "equal"){
+      for(const t of op.items){
+        const e = escapeHtml(t);
+        outA.push(`<span class="diff-sim">${e}</span>`);
+        outB.push(`<span class="diff-sim">${e}</span>`);
+      }
+    }else if(op.type === "delete"){
+      for(const t of op.items){
+        outA.push(`<span class="diff-del">${escapeHtml(t)}</span>`);
+      }
+    }else if(op.type === "insert"){
+      for(const t of op.items){
+        outB.push(`<span class="diff-add">${escapeHtml(t)}</span>`);
+      }
+    }
+  }
+
+  return { htmlA: outA.join(" "), htmlB: outB.join(" "), mode:"diff" };
+
+  // Myers diff on token arrays
+  function myersDiffTokens(a, b){
+    const N = a.length;
+    const M = b.length;
+    const max = N + M;
+    const v = new Map();
+    v.set(1, 0);
+    const trace = [];
+
+    for(let d=0; d<=max; d++){
+      const v2 = new Map();
+      for(let k=-d; k<=d; k+=2){
+        let x;
+        if(k === -d || (k !== d && (v.get(k-1) ?? -Infinity) < (v.get(k+1) ?? -Infinity))){
+          x = v.get(k+1) ?? 0; // insertion
+        }else{
+          x = (v.get(k-1) ?? 0) + 1; // deletion
+        }
+        let y = x - k;
+        while(x < N && y < M && a[x] === b[y]){
+          x++; y++;
+        }
+        v2.set(k, x);
+        if(x >= N && y >= M){
+          trace.push(v2);
+          return coalesce(backtrack(trace, a, b));
+        }
+      }
+      trace.push(v2);
+      v.clear();
+      for(const [kk,xx] of v2.entries()) v.set(kk,xx);
+    }
+    return [{type:"equal", items: a.slice()}];
+  }
+
+  function backtrack(trace, a, b){
+    let x = a.length;
+    let y = b.length;
+    const ops = [];
+    for(let d=trace.length-1; d>=0; d--){
+      const v = trace[d];
+      const k = x - y;
+      let prevK;
+      if(k === -d || (k !== d && (v.get(k-1) ?? -Infinity) < (v.get(k+1) ?? -Infinity))){
+        prevK = k + 1; // came from insertion
+      }else{
+        prevK = k - 1; // came from deletion
+      }
+      const prevX = v.get(prevK) ?? 0;
+      const prevY = prevX - prevK;
+
+      while(x > prevX && y > prevY){
+        ops.push({type:"equal", items:[a[x-1]]});
+        x--; y--;
+      }
+
+      if(d === 0) break;
+
+      if(x === prevX){
+        // insertion
+        ops.push({type:"insert", items:[b[y-1]]});
+        y--;
+      }else{
+        // deletion
+        ops.push({type:"delete", items:[a[x-1]]});
+        x--;
+      }
+    }
+    return ops.reverse();
+  }
+
+  function coalesce(ops){
+    const out = [];
+    for(const op of ops){
+      const last = out[out.length-1];
+      if(last && last.type === op.type){
+        last.items.push(...op.items);
+      }else{
+        out.push({type: op.type, items: op.items.slice()});
+      }
+    }
+    return out;
+  }
+}
+// Myers diff (tokens) – devuelve operaciones agrupadas
+function myersDiff(a, b){
+  const N = a.length, M = b.length;
+  const max = N + M;
+  const v = new Map();
+  v.set(1, 0);
+  const trace = [];
+  for(let d=0; d<=max; d++){
+    const v2 = new Map();
+    for(let k=-d; k<=d; k+=2){
+      let x;
+      if(k === -d || (k !== d && (v.get(k-1) ?? -1) < (v.get(k+1) ?? -1))){
+        x = v.get(k+1) ?? 0; // insert
+      }else{
+        x = (v.get(k-1) ?? 0) + 1; // delete
+      }
+      let y = x - k;
+      while(x < N && y < M && a[x] === b[y]){
+        x++; y++;
+      }
+      v2.set(k, x);
+      if(x >= N && y >= M){
+        trace.push(v2);
+        return backtrackMyers(trace, a, b);
+      }
+    }
+    trace.push(v2);
+    v.clear();
+    for(const [k,val] of v2.entries()) v.set(k,val);
+  }
+  return [{ type:"equal", items: a.slice() }];
+
+  function backtrackMyers(trace, a, b){
+    let x = a.length;
+    let y = b.length;
+    const ops = [];
+    for(let d=trace.length-1; d>=0; d--){
+      const v = trace[d];
+      const k = x - y;
+      let prevK;
+      if(k === -d || (k !== d && (v.get(k-1) ?? -1) < (v.get(k+1) ?? -1))){
+        prevK = k + 1;
+      }else{
+        prevK = k - 1;
+      }
+      const prevX = v.get(prevK) ?? 0;
+      const prevY = prevX - prevK;
+
+      while(x > prevX && y > prevY){
+        // diagonal (equal)
+        ops.push({ type:"equal", item: a[x-1] });
+        x--; y--;
+      }
+      if(d === 0) break;
+      if(x === prevX){
+        // insert
+        ops.push({ type:"insert", item: b[y-1] });
+        y--;
+      }else{
+        // delete
+        ops.push({ type:"delete", item: a[x-1] });
+        x--;
+      }
+    }
+
+    ops.reverse();
+    // group
+    const grouped = [];
+    for(const op of ops){
+      const last = grouped[grouped.length-1];
+      if(!last || last.type !== op.type){
+        grouped.push({ type: op.type, items: [op.item] });
+      }else{
+        last.items.push(op.item);
+      }
+    }
+    return grouped;
+  }
+}
+
+function highlightByTokens(originalText, tokenSet, aggressive, className="diff-sim"){
+  if(!originalText) return "";
+  const parts = String(originalText).split(/(\s+)/g);
+  const out = [];
+  for(const part of parts){
+    if(/^\s+$/.test(part)){
+      out.push(escapeHtml(part));
+      continue;
+    }
+    let w = part.toLowerCase();
+    if(aggressive){
+      try{ w = w.replace(/[^\p{L}\p{N}]/gu, ""); }catch(_e){ w = w.replace(/[^a-z0-9]/g, ""); }
+    }else{
+      try{ w = w.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, ""); }catch(_e){ w = w.replace(/^[^a-z0-9]+|[^a-z0-9]+$/g, ""); }
+    }
+    if(w && w.length >= 4 && tokenSet.has(w)){
+      out.push(`<span class="${className}">${escapeHtml(part)}</span>`);
+    }else{
+      out.push(escapeHtml(part));
+    }
+  }
+  return out.join("");
+}
+
+function buildShingleStrings(tokens, k, max=30000){
+    if(tokens.length < k) return [];
+    const n = tokens.length - k + 1;
+    const take = Math.min(n, max);
+    const step = n > take ? Math.ceil(n / take) : 1;
+
+    const out = [];
+    for(let i=0;i<n;i+=step){
+      out.push(tokens.slice(i, i+k).join(" "));
+    }
+    return out;
+  }
+
+  
+  // -------------------------
+  // Comparador: imágenes y binarios
+  // -------------------------
+  let MODAL_URLS = [];
+
+  function modalTrackUrl(url){
+    try{ MODAL_URLS.push(url); }catch(_e){}
+  }
+  function modalCleanupUrls(){
+    if(!MODAL_URLS || !MODAL_URLS.length) return;
+    for(const u of MODAL_URLS){
+      try{ URL.revokeObjectURL(u); }catch(_e){}
+    }
+    MODAL_URLS = [];
+  }
+
+  async function renderImageComparator(a, b){
+    const urlA = URL.createObjectURL(a.file);
+    const urlB = URL.createObjectURL(b.file);
+    modalTrackUrl(urlA); modalTrackUrl(urlB);
+
+    els.modalTitle.textContent = "Comparador (Imágenes)";
+    els.modalBody.innerHTML = `
+      <div class="row between" style="gap:12px; flex-wrap:wrap;">
+        <div class="legend">
+          <span class="pill"><span class="swatch sw-del"></span>Eliminado (A)</span>
+          <span class="pill"><span class="swatch sw-add"></span>Agregado (B)</span>
+          <span class="pill"><span class="swatch sw-sim"></span>Similar</span>
+        </div>
+        <div class="row" style="gap:8px; flex-wrap:wrap;">
+          <button class="btn ghost btn-sm" id="btnImgDiff">Mostrar diferencias</button>
+          <a class="btn ghost btn-sm" href="${urlA}" target="_blank" rel="noopener">Abrir A</a>
+          <a class="btn ghost btn-sm" href="${urlB}" target="_blank" rel="noopener">Abrir B</a>
+        </div>
+      </div>
+
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px; margin-top:10px;">
+        <div class="card" style="padding:10px;">
+          <div class="muted tiny" style="margin-bottom:6px;"><b>A</b> — ${escapeHtml(a.name||"")}</div>
+          <img id="imgCmpA" src="${urlA}" alt="Imagen A" style="width:100%; height:auto; border-radius:10px; border:1px solid var(--border);">
+        </div>
+        <div class="card" style="padding:10px;">
+          <div class="muted tiny" style="margin-bottom:6px;"><b>B</b> — ${escapeHtml(b.name||"")}</div>
+          <img id="imgCmpB" src="${urlB}" alt="Imagen B" style="width:100%; height:auto; border-radius:10px; border:1px solid var(--border);">
+        </div>
+      </div>
+
+      <div id="imgDiffWrap" class="card" style="padding:10px; margin-top:12px; display:none;">
+        <div class="muted tiny" style="margin-bottom:8px;"><b>Diferencias</b> (amarillo = distinto). Si las dimensiones no coinciden, se muestra una advertencia.</div>
+        <canvas id="imgDiffCanvas" style="width:100%; height:auto; border-radius:10px; border:1px solid var(--border);"></canvas>
+        <div class="muted tiny" id="imgDiffNote" style="margin-top:6px;"></div>
+      </div>
+    `;
+
+    const btn = document.getElementById("btnImgDiff");
+    const wrap = document.getElementById("imgDiffWrap");
+    const note = document.getElementById("imgDiffNote");
+    const canvas = document.getElementById("imgDiffCanvas");
+
+    btn?.addEventListener("click", async ()=>{
+      btn.disabled = true;
+      btn.textContent = "Calculando…";
+      wrap.style.display = "block";
+      note.textContent = "";
+
+      try{
+        const [bmpA, bmpB] = await Promise.all([
+          createImageBitmap(a.file),
+          createImageBitmap(b.file)
+        ]);
+
+        if(bmpA.width !== bmpB.width || bmpA.height !== bmpB.height){
+          note.textContent = `Dimensiones distintas: A=${bmpA.width}x${bmpA.height}, B=${bmpB.width}x${bmpB.height}. Se calcula diff escalando a la menor dimensión.`;
+        }
+
+        // limitar tamaño por rendimiento
+        const w = Math.min(bmpA.width, bmpB.width);
+        const h = Math.min(bmpA.height, bmpB.height);
+        const maxPx = 6_000_000; // ~6 MP
+        let tw = w, th = h;
+        if(w*h > maxPx){
+          const s = Math.sqrt(maxPx / (w*h));
+          tw = Math.max(1, Math.floor(w*s));
+          th = Math.max(1, Math.floor(h*s));
+          note.textContent = (note.textContent ? note.textContent + " " : "") + `Se reduce a ${tw}x${th} por rendimiento.`;
+        }
+
+        const offA = document.createElement("canvas");
+        offA.width = tw; offA.height = th;
+        const offB = document.createElement("canvas");
+        offB.width = tw; offB.height = th;
+
+        const ctxA = offA.getContext("2d", { willReadFrequently:true });
+        const ctxB = offB.getContext("2d", { willReadFrequently:true });
+        ctxA.drawImage(bmpA, 0, 0, tw, th);
+        ctxB.drawImage(bmpB, 0, 0, tw, th);
+
+        const da = ctxA.getImageData(0,0,tw,th);
+        const db = ctxB.getImageData(0,0,tw,th);
+        const out = ctxA.createImageData(tw, th);
+
+        const A = da.data, B = db.data, O = out.data;
+        const thr = 18; // sensibilidad
+        for(let i=0;i<O.length;i+=4){
+          const dr = Math.abs(A[i]-B[i]);
+          const dg = Math.abs(A[i+1]-B[i+1]);
+          const dbb = Math.abs(A[i+2]-B[i+2]);
+          const d = dr+dg+dbb;
+          if(d > thr){
+            // amarillo
+            O[i]=255; O[i+1]=230; O[i+2]=120; O[i+3]=255;
+          }else{
+            O[i]=0; O[i+1]=0; O[i+2]=0; O[i+3]=0;
+          }
+        }
+
+        canvas.width = tw; canvas.height = th;
+        const c = canvas.getContext("2d", { willReadFrequently:true });
+        c.putImageData(out, 0, 0);
+      }catch(e){
+        note.textContent = `No se pudo calcular el diff: ${e?.message||e}`;
+      }finally{
+        btn.disabled = false;
+        btn.textContent = "Recalcular diferencias";
+      }
+    });
+  }
+
+  async function renderBinaryComparator(a, b){
+    els.modalTitle.textContent = "Comparador (Binario)";
+    els.modalBody.innerHTML = `<div class="muted tiny">Preparando comparación binaria…</div>`;
+
+    try{
+      const [fa, fb] = await Promise.all([
+        ensureBinaryFingerprint(a),
+        ensureBinaryFingerprint(b),
+      ]);
+
+      const extA = getExt(a.name);
+      const extB = getExt(b.name);
+
+      const match1 = fa?.h1 && fb?.h1 && fa.h1 === fb.h1;
+      const match2 = fa?.h2 && fb?.h2 && fa.h2 === fb.h2;
+      const match3 = fa?.h3 && fb?.h3 && fa.h3 === fb.h3;
+
+      const sizeRatio = Math.max(a.size||1, b.size||1) / Math.max(1, Math.min(a.size||1, b.size||1));
+      const sizePct = (1 - Math.min(1, (sizeRatio-1)/0.35)) * 100;
+
+      let zipInfo = "";
+      const isZip = (extA === "zip" && extB === "zip");
+
+      if(isZip && typeof JSZip !== "undefined"){
+        try{
+          const [za, zb] = await Promise.all([
+            JSZip.loadAsync(a.file),
+            JSZip.loadAsync(b.file),
+          ]);
+          const namesA = Object.keys(za.files || {}).filter(n=>!za.files[n].dir);
+          const namesB = Object.keys(zb.files || {}).filter(n=>!zb.files[n].dir);
+          const setB = new Set(namesB);
+          const inter = namesA.filter(n=>setB.has(n));
+          const union = new Set([...namesA, ...namesB]);
+          const jac = union.size ? (inter.length/union.size) : 0;
+          zipInfo = `
+            <div class="card" style="padding:10px; margin-top:10px;">
+              <div class="muted tiny"><b>ZIP</b> — Entradas A=${namesA.length}, B=${namesB.length}, intersección=${inter.length}, Jaccard≈${(jac*100).toFixed(1)}%</div>
+              <div class="muted tiny" style="margin-top:6px;">Muestra (hasta 30 de la intersección):</div>
+              <pre style="max-height:140px; overflow:auto; margin-top:6px;">${escapeHtml(inter.slice(0,30).join("\n") || "—")}</pre>
+            </div>
+          `;
+        }catch(_e){
+          zipInfo = `<div class="muted tiny" style="margin-top:10px;">No se pudo leer el contenido del ZIP (posible ZIP grande o cifrado).</div>`;
+        }
+      }
+
+      els.modalBody.innerHTML = `
+        <div class="legend">
+          <span class="pill"><span class="swatch sw-del"></span>Eliminado (A)</span>
+          <span class="pill"><span class="swatch sw-add"></span>Agregado (B)</span>
+          <span class="pill"><span class="swatch sw-sim"></span>Similar</span>
+        </div>
+
+        <div class="card" style="padding:10px; margin-top:10px;">
+          <table class="tbl" style="margin:0;">
+            <thead><tr><th></th><th>A</th><th>B</th></tr></thead>
+            <tbody>
+              <tr><td><b>Archivo</b></td><td class="wrapcell">${escapeHtml(a.name||"")}</td><td class="wrapcell">${escapeHtml(b.name||"")}</td></tr>
+              <tr><td><b>Extensión</b></td><td>${escapeHtml(extLabel(extA))}</td><td>${escapeHtml(extLabel(extB))}</td></tr>
+              <tr><td><b>Tamaño</b></td><td>${formatBytes(a.size||0)}</td><td>${formatBytes(b.size||0)}</td></tr>
+              <tr><td><b>SHA-256</b></td><td class="wrapcell"><span class="full">${escapeHtml(a.sha256||"—")}</span></td><td class="wrapcell"><span class="full">${escapeHtml(b.sha256||"—")}</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card" style="padding:10px; margin-top:10px;">
+          <div class="muted tiny"><b>Huella por fragmentos</b> (inicio/medio/fin). Coincidencias: ${[match1,match2,match3].filter(Boolean).length}/3</div>
+          <table class="tbl" style="margin-top:8px;">
+            <thead><tr><th>Fragmento</th><th>Match</th><th>Hash A</th><th>Hash B</th></tr></thead>
+            <tbody>
+              <tr><td>Inicio</td><td>${match1?'<span class="badge ok">Sí</span>':'<span class="badge info">No</span>'}</td><td class="wrapcell"><span class="full">${escapeHtml(fa.h1||"—")}</span></td><td class="wrapcell"><span class="full">${escapeHtml(fb.h1||"—")}</span></td></tr>
+              <tr><td>Medio</td><td>${match2?'<span class="badge ok">Sí</span>':'<span class="badge info">No</span>'}</td><td class="wrapcell"><span class="full">${escapeHtml(fa.h2||"—")}</span></td><td class="wrapcell"><span class="full">${escapeHtml(fb.h2||"—")}</span></td></tr>
+              <tr><td>Fin</td><td>${match3?'<span class="badge ok">Sí</span>':'<span class="badge info">No</span>'}</td><td class="wrapcell"><span class="full">${escapeHtml(fa.h3||"—")}</span></td><td class="wrapcell"><span class="full">${escapeHtml(fb.h3||"—")}</span></td></tr>
+            </tbody>
+          </table>
+          <div class="muted tiny" style="margin-top:6px;">Cercanía por tamaño (heurística): ${isFinite(sizePct) ? sizePct.toFixed(1) : "—"}%</div>
+        </div>
+
+        ${zipInfo}
+      `;
+    }catch(e){
+      els.modalBody.innerHTML = `<div class="muted tiny">No se pudo preparar el comparador binario: ${escapeHtml(e?.message||String(e))}</div>`;
+    }
+  }
+
+function closeModal(){
+    els.modalOverlay.classList.remove("show");
+    els.modalOverlay.setAttribute("aria-hidden", "true");
+    modalCleanupUrls();
+  }
+
+  // -------------------------
+  // Exports
+  // -------------------------
+  function downloadBlob(blob, filename){
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 2500);
+  }
+
+  function exportJSON(){
+    if(!STATE.analysis) return;
+    const blob = new Blob([JSON.stringify(STATE.analysis, null, 2)], { type:"application/json" });
+    downloadBlob(blob, "reporte.json");
+  }
+
+  function exportCSV(){
+    if(!STATE.analysis) return;
+
+    const rows = [];
+    rows.push([
+      "archivo_a","archivo_b","similitud_total","similitud_sin_portada","similitud_final",
+      "metodo","etiqueta","exacto","tam_a","tam_b","tipo_a","tipo_b"
+    ]);
+
+    for(const p of STATE.analysis.similarPairs){
+      const a = STATE.byId.get(p.aId);
+      const b = STATE.byId.get(p.bId);
+      rows.push([
+        a?.name || "",
+        b?.name || "",
+        p.totalPercent == null ? "" : p.totalPercent.toFixed(3),
+        p.noCoverPercent == null ? "" : p.noCoverPercent.toFixed(3),
+        p.finalPercent == null ? "" : p.finalPercent.toFixed(3),
+        p.method || "",
+        p.label || "",
+        p.exact ? "true" : "false",
+        a?.size ?? "",
+        b?.size ?? "",
+        a?.type ?? "",
+        b?.type ?? "",
+      ]);
+    }
+
+    // --- Sección adicional: duplicados exactos (SHA-256)
+    rows.push([]);
+    rows.push(["SECCION","DUPLICADOS_EXACTOS_SHA256"]); // marcador
+    rows.push(["grupo","sha256","archivo","tipo","tam","lastModified"]); 
+    for(const g of (STATE.analysis.exactGroups || [])){
+      for(const fid of (g.fileIds || [])){
+        const r = STATE.byId.get(fid);
+        rows.push([
+          g.groupId ?? "",
+          g.sha256 ?? "",
+          r?.name || "",
+          r?.type ?? "",
+          r?.size ?? "",
+          r?.lastModified ?? "",
+        ]);
+      }
+    }
+
+    const csv = rows.map(r => r.map(csvEscape).join(",")).join("\n");
+    const blob = new Blob([csv], { type:"text/csv;charset=utf-8" });
+    downloadBlob(blob, "reporte.csv");
+  }
+
+  function csvEscape(v){
+    const s = String(v ?? "");
+    if(/[",\n]/.test(s)) return `"${s.replaceAll('"','""')}"`;
+    return s;
+  }
+
+  function exportPDF(){
+    if(!STATE.analysis) return;
+
+    const { jsPDF } = window.jspdf || {};
+    if(!jsPDF){
+      alert("jsPDF no está disponible.");
+      return;
+    }
+
+    const doc = new jsPDF({ orientation:"p", unit:"mm", format:"a4" });
+    const pageW = doc.internal.pageSize.getWidth();
+    const pageH = doc.internal.pageSize.getHeight();
+
+    const margin = 12;
+    const headerH = 18;
+
+    const SENA_LOGO_PNG = "data:image/png;base64,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";
+
+    function drawHeader(pageNum){
+      // white header + green bottom line (similar al header HTML)
+      doc.setFillColor(255,255,255);
+      doc.rect(0,0,pageW, headerH, "F");
+
+      doc.setFillColor(15,155,26);
+      doc.rect(0, headerH-2, pageW, 2, "F");
+
+      // simple "logo" vector (no dependencias externas)
+      
+// Logo SENA (PNG embebido)
+try{
+  doc.addImage(SENA_LOGO_PNG, "PNG", margin+1, 3.5, 10, 10);
+}catch(_e){
+  // fallback: si addImage falla, usar marca simple
+  doc.setFillColor(57,169,0);
+  doc.circle(margin+6, 8.5, 5, "F");
+}
+
+
+      doc.setTextColor(11,57,24);
+      doc.setFontSize(10);
+      doc.text("Servicio Nacional de Aprendizaje - SENA Regional Tolima", margin+14, 7.8);
+      doc.setTextColor(13,124,29);
+      doc.setFontSize(11);
+      doc.text("Reporte: Duplicados y Similitud", margin+14, 13.0);
+
+      // page number
+      doc.setTextColor(75,85,99);
+      doc.setFontSize(9);
+      doc.text(`Página ${pageNum}`, pageW - margin, 7.8, { align:"right" });
+    }
+
+    function drawFooter(){
+      doc.setTextColor(100,116,139);
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(8.5);
+      const dt = new Date();
+      const stamp = dt.toLocaleString("es-CO");
+      doc.text(`Generado: ${stamp}`, margin, pageH - 7);
+      doc.text("SENA 360", pageW - margin, pageH - 7, { align:"right" });
+      doc.setTextColor(0,0,0);
+    }
+
+    drawHeader(1);
+    drawFooter();
+
+    let y = headerH + 10;
+
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(12);
+    doc.text("Resumen", margin, y);
+    y += 6;
+
+    const meta = STATE.analysis.meta || {};
+    doc.setFont("helvetica","normal");
+    doc.setFontSize(10);
+
+    const filesCount = STATE.analysis.files.length;
+    const exactCount = STATE.analysis.exactGroups.length;
+    const pairCount = STATE.analysis.similarPairs.length;
+    const thr = meta.threshold ?? STATE.settings.threshold;
+
+    doc.text(`Archivos cargados: ${filesCount}`, margin, y); y += 5;
+    doc.text(`Grupos exactos: ${exactCount}`, margin, y); y += 5;
+    doc.text(`Pares comparados: ${pairCount} (umbral UI: ${thr}%)`, margin, y); y += 5;
+    doc.text(`Ignorar portada: ${meta.ignoreCover ? "Sí" : "No"} (PDF:${meta.ignoreCoverPdf?"Sí":"No"} · DOCX:${meta.ignoreCoverDocx?"Sí":"No"}) · Normalización agresiva: ${meta.aggressive ? "Sí" : "No"}`, margin, y); y += 8;
+
+    // Exact duplicates table
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(12);
+    doc.text("Copias exactas (grupos)", margin, y);
+    y += 4;
+
+    const exactRows = [];
+    for(const g of STATE.analysis.exactGroups){
+      for(const fid of g.fileIds){
+        const r = STATE.byId.get(fid);
+        exactRows.push([
+          String(g.groupId),
+          r ? r.name : String(fid),
+          formatBytes(g.size),
+          g.sha256
+        ]);
+      }
+    }
+    if(!exactRows.length){
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10);
+      doc.text("No se detectaron grupos exactos.", margin, y+5);
+      y += 12;
+    }else{
+      doc.autoTable({
+        startY: y + 2,
+        showHead: "everyPage",
+        head: [["Grupo","Archivo","Tamaño","SHA‑256"]],
+        body: exactRows,
+        margin: { top: 24, left: margin, right: margin },
+        styles: { fontSize: 8, cellPadding: 2 },
+        headStyles: { fillColor: [57,169,0] },
+        willDrawPage: () => {
+          const pn = doc.internal.getNumberOfPages();
+          drawHeader(pn);
+          drawFooter();
+        },
+              });
+      y = doc.lastAutoTable.finalY + 8;
+    }
+
+    // Similarity table
+    doc.setFont("helvetica","bold");
+    doc.setFontSize(12);
+    doc.text("Similitud (pares)", margin, y);
+    y += 4;
+
+    const simRows = STATE.analysis.similarPairs
+      .slice()
+      .sort((a,b)=>(b.finalPercent||0)-(a.finalPercent||0))
+      .map(p=>{
+        const a = STATE.byId.get(p.aId);
+        const b = STATE.byId.get(p.bId);
+        return [
+          a ? a.name : String(p.aId),
+          b ? b.name : String(p.bId),
+          p.method || "",
+          p.totalPercent == null ? "" : p.totalPercent.toFixed(1),
+          p.noCoverPercent == null ? "" : p.noCoverPercent.toFixed(1),
+          p.finalPercent == null ? "" : p.finalPercent.toFixed(1),
+          p.label || "",
+          p.exact ? "Sí" : "No"
+        ];
+      });
+
+    if(!simRows.length){
+      doc.setFont("helvetica","normal");
+      doc.setFontSize(10);
+      doc.text("No hubo pares comparables para similitud.", margin, y+5);
+    }else{
+      doc.autoTable({
+        startY: y + 2,
+        showHead: "everyPage",
+        head: [["Archivo A","Archivo B","Método","% total","% sin portada","% final","Etiqueta","Exacto"]],
+        body: simRows,
+        margin: { top: 24, left: margin, right: margin },
+        styles: { fontSize: 7.5, cellPadding: 1.6 },
+        headStyles: { fillColor: [57,169,0] },
+        willDrawPage: () => {
+          const pn = doc.internal.getNumberOfPages();
+          drawHeader(pn);
+          drawFooter();
+        },
+        columnStyles: {
+          0: { cellWidth: 38 },
+          1: { cellWidth: 38 },
+          2: { cellWidth: 18 },
+          3: { cellWidth: 14, halign:"right" },
+          4: { cellWidth: 18, halign:"right" },
+          5: { cellWidth: 14, halign:"right" },
+          6: { cellWidth: 22 },
+          7: { cellWidth: 12 }
+        },
+              });
+    }
+
+    doc.save("reporte.pdf");
+  }
+
+  // -------------------------
+  // Events
+  // -------------------------
+function setupHeaderSorting(){
+  // Archivos
+  const filesTable = document.querySelector('[aria-label="Tabla de archivos"] table');
+  if(filesTable){
+    filesTable.querySelectorAll('th.sortable[data-sort]').forEach(th=>{
+      th.addEventListener('click', ()=>{
+        const f = th.getAttribute('data-sort');
+        if(TABLE.files.sortField === f){
+          TABLE.files.sortDir = (TABLE.files.sortDir === "asc") ? "desc" : "asc";
+        }else{
+          TABLE.files.sortField = f;
+          TABLE.files.sortDir = (f === "size" || f === "lastModified") ? "desc" : "asc";
+        }
+        updateSortIndicators(filesTable, TABLE.files);
+        renderFilesTable();
+      });
+    });
+    updateSortIndicators(filesTable, TABLE.files);
+  }
+
+  // Exactos
+  const exactTable = document.querySelector('[aria-label="Tabla de copias exactas"] table');
+  if(exactTable){
+    exactTable.querySelectorAll('th.sortable[data-sort]').forEach(th=>{
+      th.addEventListener('click', ()=>{
+        const f = th.getAttribute('data-sort');
+        if(TABLE.exact.sortField === f){
+          TABLE.exact.sortDir = (TABLE.exact.sortDir === "asc") ? "desc" : "asc";
+        }else{
+          TABLE.exact.sortField = f;
+          TABLE.exact.sortDir = (f === "size" || f === "lastModified") ? "desc" : "asc";
+        }
+        updateSortIndicators(exactTable, TABLE.exact);
+        if(STATE.analysis) renderExactTable(expandExactGroupsForUI());
+      });
+    });
+    updateSortIndicators(exactTable, TABLE.exact);
+  }
+
+  // Similitud
+  const simTable = document.querySelector('[aria-label="Tabla de similitud"] table');
+  if(simTable){
+    simTable.querySelectorAll('th.sortable[data-sort]').forEach(th=>{
+      th.addEventListener('click', ()=>{
+        const f = th.getAttribute('data-sort');
+        if(TABLE.sim.sortField === f){
+          TABLE.sim.sortDir = (TABLE.sim.sortDir === "asc") ? "desc" : "asc";
+        }else{
+          TABLE.sim.sortField = f;
+          // default: strings asc, porcentajes desc
+          TABLE.sim.sortDir = (f === "a" || f === "b" || f === "method" || f === "label") ? "asc" : "desc";
+        }
+        updateSortIndicators(simTable, TABLE.sim);
+        if(STATE.analysis) renderSimPairs(STATE.analysis.similarPairs);
+      });
+    });
+    updateSortIndicators(simTable, TABLE.sim);
+  }
+}
+
+function updateSortIndicators(tableEl, tableState){
+  if(!tableEl) return;
+  tableEl.querySelectorAll('th.sortable[data-sort]').forEach(th=>{
+    const ind = th.querySelector('.sort-ind');
+    const f = th.getAttribute('data-sort');
+    if(!ind) return;
+    if(f === tableState.sortField){
+      ind.textContent = tableState.sortDir === "asc" ? "▲" : "▼";
+    }else{
+      ind.textContent = "";
+    }
+  });
+}
+
+
+function updateSortIndicators(tableEl, tableState){
+  if(!tableEl) return;
+  tableEl.querySelectorAll('th.sortable[data-sort]').forEach(th=>{
+    const ind = th.querySelector('.sort-ind');
+    const f = th.getAttribute('data-sort');
+    if(!ind) return;
+    if(f === tableState.sortField){
+      ind.textContent = tableState.sortDir === "asc" ? "▲" : "▼";
+    }else{
+      ind.textContent = "";
+    }
+  });
+}
+
+
+  // -------------------------
+  // OCR runner (por archivo PDF) – bajo demanda
+  // -------------------------
+  async function runPdfOcr(fileId){
+    const r = STATE.byId.get(Number(fileId));
+    if(!r || r.kind !== "pdf") return;
+    if(STATE.isBusy) return;
+
+    setBusy(true);
+    STATE.cancelRequested = false;
+    setProgress(1, "OCR en PDF…", "Cargando OCR (tesseract.js).");
+
+    try{
+      const txt = await ocrPdfIntoText(r, { lang: "spa" });
+      if(STATE.cancelRequested) throw new Error("Cancelado por el usuario.");
+
+      r.extracted = r.extracted || {};
+      r.extracted.textOcr = txt;
+      r.extracted.useOcr = true;
+      r.extracted.pdfLowText = false;
+
+      // Recalcular fingerprints con OCR (full + noCover configurable)
+      const full = txt || "";
+      const noCover = full; // OCR no preserva paginación; usar full como noCover
+      const normFull = normalizeText(full, STATE.settings.aggressive);
+      const tokFull = tokenizeWords(normFull);
+      const shFull = buildShingles(tokFull, STATE.settings.shingleK, STATE.settings.maxShingles);
+      const sigFull = minhashSignature(shFull, STATE.settings.minhashSize);
+      r.fingerprints = r.fingerprints || {};
+      r.fingerprints.text = { sig: sigFull, shingles: shFull, tokenCount: tokFull.length, charCount: full.length };
+      r.fingerprints.textNoCover = { sig: sigFull.slice(), shingles: shFull, tokenCount: tokFull.length, charCount: full.length };
+
+      setFileStatus(r.id, "OCR listo");
+      renderFilesTable();
+
+      // Invalida cache para que próximas comparaciones usen OCR; no fuerza análisis automático
+      STATE.cache = null;
+
+      setProgress(100, "OCR listo", "Texto OCR disponible para comparación y similitud.");
+    }catch(e){
+      setFileStatus(r.id, "Error");
+      setProgress(100, "Error", e.message || String(e));
+    }finally{
+      setBusy(false);
+      updateExportButtons();
+    }
+  }
+
+  function wireUI(){
+    // Dropzone interactions
+    const dz = els.dropZone;
+
+    els.btnPick.addEventListener("click", () => els.fileInput.click());
+
+    dz.addEventListener("click", (e)=>{
+      // Evita doble disparo si se hace clic en el botón interno
+      if(e.target && e.target.closest && e.target.closest("button")) return;
+      els.fileInput.click();
+    });
+
+    
+dz.addEventListener("dragover", (e)=>{
+  e.preventDefault();
+  dz.classList.add("is-active");
+});
+dz.addEventListener("dragleave", ()=>{
+  dz.classList.remove("is-active");
+});
+dz.addEventListener("drop", (e)=>{
+  e.preventDefault();
+  dz.classList.remove("is-active");
+  if(e.dataTransfer?.files?.length){
+    addFiles(e.dataTransfer.files);
+  }
+});
+
+dz.addEventListener("keydown", (e)=>{
+      if(e.key === "Enter" || e.key === " "){
+        e.preventDefault();
+        els.fileInput.click();
+      }
+    });
+
+    els.fileInput.addEventListener("change", (e)=>{
+      addFiles(e.target.files);
+      els.fileInput.value = "";
+    });
+
+    // Table actions
+    
+els.filesTbody.addEventListener("click", (e)=>{
+  const btn = e.target.closest("button");
+  if(!btn) return;
+  const act = btn.dataset.action || btn.getAttribute("data-action");
+  const id = Number(btn.dataset.id || btn.getAttribute("data-id"));
+  if(!id) return;
+
+  if(act === "remove"){
+    removeFile(id);
+    return;
+  }
+  if(act === "ocr"){
+    runPdfOcr(id);
+    return;
+  }
+  if(act === "toggleOcr"){
+    const r = STATE.byId.get(id);
+    if(!r) return;
+    r.extracted = r.extracted || {};
+    r.extracted.useOcr = !r.extracted.useOcr;
+    // invalida cache para que un nuevo análisis use el texto correcto
+    STATE.cache = null;
+    renderFilesTable();
+    toast(`Usar OCR: ${r.extracted.useOcr ? "Sí" : "No"}`);
+    return;
+  }
+});
+
+    // Analyze
+    els.btnAnalyze.addEventListener("click", analyze);
+
+    // Stop (cancel)
+    if(els.btnStop){
+      els.btnStop.addEventListener("click", ()=>{
+        if(!STATE.isBusy) return;
+        STATE.cancelRequested = true;
+        try{ els.progressMini.textContent = "Cancelando…"; }catch(_e){}
+      });
+    }
+
+    // Clear
+    els.btnClear.addEventListener("click", ()=>{
+      if(STATE.isBusy) return;
+      clearAll();
+    });
+
+    // Controls
+    els.threshold.addEventListener("input", ()=>{
+      const v = Number(els.threshold.value);
+      STATE.settings.threshold = v;
+      els.thresholdVal.textContent = `${v}%`;
+      if(STATE.analysis){
+        renderSimPairs(STATE.analysis.similarPairs);
+        const above = STATE.analysis.similarPairs.filter(p => (p.finalPercent ?? 0) >= v).length;
+        els.simStats.textContent = `${STATE.analysis.similarPairs.length} pares comparados (mostrando ${above} ≥ ${v}%).`;
+      }
+    });
+
+    els.toggleIgnoreCover.addEventListener("change", ()=>{
+      STATE.settings.ignoreCover = !!els.toggleIgnoreCover.checked;
+    });
+    if(els.toggleIgnorePdfCover){
+      els.toggleIgnorePdfCover.addEventListener("change", ()=>{
+        STATE.settings.ignoreCoverPdf = !!els.toggleIgnorePdfCover.checked;
+      });
+    }
+    if(els.toggleIgnoreDocxCover){
+      els.toggleIgnoreDocxCover.addEventListener("change", ()=>{
+        STATE.settings.ignoreCoverDocx = !!els.toggleIgnoreDocxCover.checked;
+      });
+    }
+    if(els.pdfSkipPages){
+      els.pdfSkipPages.addEventListener("input", ()=>{
+        const v = Math.max(0, Math.min(50, Number(els.pdfSkipPages.value || 1)));
+        STATE.settings.pdfSkipPages = v;
+      });
+    }
+    if(els.docxSkipRatio){
+      els.docxSkipRatio.addEventListener("input", ()=>{
+        const v = Math.max(0, Math.min(50, Number(els.docxSkipRatio.value || 8)));
+        STATE.settings.docxSkipRatio = v;
+      });
+    }
+
+    els.toggleAggressive.addEventListener("change", ()=>{
+      STATE.settings.aggressive = !!els.toggleAggressive.checked;
+    });
+
+    // Parámetros de similitud
+    if(els.shingleK){
+      els.shingleK.addEventListener("input", ()=>{
+        STATE.settings.shingleK = Math.max(3, Math.min(12, Number(els.shingleK.value || 5)));
+      });
+    }
+    if(els.minhashSize){
+      els.minhashSize.addEventListener("input", ()=>{
+        const v = Number(els.minhashSize.value || 64);
+        // forzar múltiplos de 16 en el rango
+        STATE.settings.minhashSize = Math.max(16, Math.min(256, Math.round(v/16)*16));
+        els.minhashSize.value = String(STATE.settings.minhashSize);
+      });
+    }
+    if(els.maxShingles){
+      els.maxShingles.addEventListener("input", ()=>{
+        STATE.settings.maxShingles = Math.max(5000, Math.min(500000, Number(els.maxShingles.value || 120000)));
+      });
+    }
+    if(els.maxCompareShingles){
+      els.maxCompareShingles.addEventListener("input", ()=>{
+        STATE.settings.maxCompareShingles = Math.max(1000, Math.min(200000, Number(els.maxCompareShingles.value || 50000)));
+      });
+    }
+
+
+
+// Búsqueda – Archivos
+if(els.filesSearch){
+  els.filesSearch.addEventListener("input", ()=>{
+    TABLE.files.q = els.filesSearch.value || "";
+    renderFilesTable();
+  });
+}
+
+// Búsqueda y ordenamiento – Exactos
+if(els.exactSearch){
+  els.exactSearch.addEventListener("input", ()=>{
+    TABLE.exact.q = els.exactSearch.value || "";
+    if(STATE.analysis) renderExactTable(expandExactGroupsForUI());
+  });
+}
+if(els.exactSortField){
+  els.exactSortField.addEventListener("change", ()=>{
+    TABLE.exact.sortField = els.exactSortField.value;
+    if(STATE.analysis) renderExactTable(expandExactGroupsForUI());
+  });
+}
+if(els.exactSortDir){
+  els.exactSortDir.addEventListener("change", ()=>{
+    TABLE.exact.sortDir = els.exactSortDir.value;
+    if(STATE.analysis) renderExactTable(expandExactGroupsForUI());
+  });
+}
+
+// Búsqueda y ordenamiento – Similitud
+if(els.simSearch){
+  els.simSearch.addEventListener("input", ()=>{
+    TABLE.sim.q = els.simSearch.value || "";
+    if(STATE.analysis) renderSimPairs(STATE.analysis.similarPairs);
+  });
+}
+if(els.simSortField){
+  els.simSortField.addEventListener("change", ()=>{
+    TABLE.sim.sortField = els.simSortField.value;
+    if(STATE.analysis) renderSimPairs(STATE.analysis.similarPairs);
+  });
+}
+if(els.simSortDir){
+  els.simSortDir.addEventListener("change", ()=>{
+    TABLE.sim.sortDir = els.simSortDir.value;
+    if(STATE.analysis) renderSimPairs(STATE.analysis.similarPairs);
+  });
+}
+
+    // Export
+    els.btnExportJSON.addEventListener("click", exportJSON);
+    els.btnExportCSV.addEventListener("click", exportCSV);
+    els.btnExportPDF.addEventListener("click", exportPDF);
+
+    // Similarity table actions
+    els.simTbody.addEventListener("click", (e)=>{
+      const btn = e.target.closest("button");
+      if(!btn) return;
+      const act = btn.dataset.action;
+      if(act === "compare"){
+        const pk = btn.dataset.pair;
+        if(pk) showCompare(pk);
+      }
+    });
+
+    // Modal close
+    els.btnModalClose.addEventListener("click", closeModal);
+    els.modalOverlay.addEventListener("click", (e)=>{
+      if(e.target === els.modalOverlay) closeModal();
+    });
+    document.addEventListener("keydown", (e)=>{
+      if(e.key === "Escape" && els.modalOverlay.classList.contains("show")) closeModal();
+    });
+  }
+
+  // -------------------------
+  // Init
+  // -------------------------
+  function init(){
+    wireUI();
+    setupHeaderSorting();
+    updateCounts();
+    setBusy(false);
+    setProgress(0, "—", `Worker SHA‑256: ${HASH.mode}.`);
+  }
+
+  window.addEventListener("load", init);
+})();
+
+</script>
+</body>
+</html>
